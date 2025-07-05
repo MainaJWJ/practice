@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹 오피스</title>
+    <script src="./웹 오피스_files/saved_resource"></script>
+    <style>
+        /* 사용자 정의 스타일 */
+        body {
+            font-family: 'Inter', sans-serif; /* Inter 폰트 적용 */
+        }
+        /* 페이지 컨테이너 */
+        #page-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column; /* 페이지를 세로로 쌓음 */
+            align-items: center; /* 페이지 가운데 정렬 */
+        }
+        /* A4 페이지 기본 스타일 */
+        .a4-page {
+            width: 100%;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border: 1px solid #d1d5db; /* 테두리 */
+            margin: 0 auto 2rem auto; /* 위쪽 마진 제거, 좌우 auto, 아래쪽 간격 */
+            overflow: hidden !important; /* 중요: 내용 넘침 감지 및 시각적 확장 방지 */
+            position: relative; /* 자식 절대 위치 요소(캔버스, 마커, 핸들)의 기준점 */
+            box-sizing: border-box;
+            transition: max-width 0.3s ease, height 0.3s ease; /* min-height -> height */
+        }
+        /* A4 세로 방향 */
+        .a4-portrait {
+            max-width: 800px;
+            height: 1123px; /* min-height -> height 고정 높이 설정 */
+        }
+        /* A4 가로 방향 */
+        .a4-landscape {
+            max-width: 1123px;
+            height: 800px;  /* min-height -> height 고정 높이 설정 */
+        }
+
+        /* contenteditable 영역 기본 스타일 */
+        .editor {
+            width: 100%;
+            height: 100%; /* 페이지 높이에 맞춤 */
+            outline: none;
+            line-height: 1.6;
+            font-size: 16px;
+            color: black;
+            box-sizing: border-box;
+            overflow-wrap: break-word;
+            position: relative; /* 텍스트 영역이 캔버스 위에 오도록 */
+            z-index: 10; /* 캔버스보다 위에 표시 */
+             /* 그리기 모드일 때 텍스트 편집 방지 */
+             -webkit-user-select: text;
+             -moz-user-select: text;
+             -ms-user-select: text;
+             user-select: text;
+        }
+        /* 그리기 모드일 때 텍스트 영역 이벤트 차단 (선택 방지) */
+        body.drawing-active .editor {
+             pointer-events: none; /* 텍스트 선택/편집 방지 */
+             -webkit-user-select: none;
+             -moz-user-select: none;
+             -ms-user-select: none;
+             user-select: none;
+        }
+
+         /* 그리기 캔버스 스타일 */
+        .drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* 기본적으로 이벤트 통과 */
+            z-index: 5; /* 에디터(10)보다는 아래, 페이지 배경보다는 위 */
+        }
+        /* 그리기 모드일 때 캔버스 활성화 */
+        body.drawing-active .drawing-canvas {
+            pointer-events: auto;
+            cursor: crosshair; /* 펜 모양 커서 */
+            z-index: 15; /* 그리기 시 최상위로 (선택적) */
+        }
+        /* 지우개 모드일 때 커서 변경 (선택적) */
+        body.eraser-active .drawing-canvas {
+            /* cursor: url('path/to/eraser.cur'), auto; */ /* 지우개 커서 이미지 */
+            cursor: cell; /* 임시 지우개 모양 */
+        }
+
+        /* 도형 미리보기용 임시 캔버스 스타일 */
+        .preview-canvas {
+             position: absolute;
+             top: 0;
+             left: 0;
+             /* width/height는 JS로 설정 */
+             pointer-events: none; /* 이벤트는 아래 캔버스에서 처리 */
+             z-index: 16; /* 그리기 캔버스보다 위에 표시 */
+             /* opacity: 0.7; */ /* 미리보기 투명도 제거 (점선으로 구분) */
+        }
+
+
+        /* 편집기 내부 이미지 스타일 */
+        .editor img {
+            max-width: 50%;
+            height: auto;
+            float: left;
+            margin-right: 0.75rem;
+            margin-left: 0;
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+        }
+
+        /* --- 이미지 선택 및 리사이즈 핸들 스타일 --- */
+        .editor img.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #3b82f6;
+            border: 1px solid white;
+            border-radius: 2px;
+            cursor: nwse-resize;
+            z-index: 11; /* 에디터 위, 마커보다는 위 */
+        }
+
+        /* --- 라인 마커 스타일 --- */
+        .line-marker {
+            position: absolute;
+            left: -25px; /* 페이지 왼쪽 바깥으로 25px 이동 */
+            width: 15px; /* 마커 너비 */
+            height: 1.6em; /* 대략적인 한 줄 높이 (line-height와 맞춤) */
+            background-color: #e2e8f0; /* 마커 색상 */
+            border-radius: 2px;
+            pointer-events: none; /* 마커가 클릭 등 이벤트 방해하지 않도록 */
+            z-index: 0; /* 다른 요소 뒤에 있도록 */
+            opacity: 0.7;
+            /* top 값은 JS로 설정 */
+        }
+
+
+        /* 스크롤바 숨김 (필요 시) */
+        .main-content-area::-webkit-scrollbar { display: none; }
+        .main-content-area { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- 툴바 내부 요소 스타일 --- */
+         #toolbar-content { flex-wrap: wrap; gap: 0.5rem; }
+        .toolbar-group { display: inline-flex; align-items: center; padding-right: 0.75rem; margin-right: 0.75rem; border-right: 1px solid #cbd5e1; vertical-align: middle; }
+        .toolbar-group:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+        .toolbar-button { background-color: white; color: #374151; font-weight: 500; padding: 0.25rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); font-size: 0.875rem; cursor: pointer; transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out; line-height: 1.25rem; min-width: 28px; text-align: center; vertical-align: middle; display: inline-flex; justify-content: center; align-items: center; }
+        .toolbar-button:hover { background-color: #f9fafb; }
+        /* 툴바 버튼 활성 상태 (JS에서 Tailwind 클래스로 제어) */
+        .toolbar-button.active {
+             background-color: #ebf5ff; /* 연한 파란색 배경 */
+             border-color: #90cdf4; /* 파란색 테두리 */
+             box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* 눌린 효과 */
+        }
+
+        .toolbar-label { font-size: 0.875rem; color: #4b5563; margin-right: 0.25rem; white-space: nowrap; vertical-align: middle; }
+        .toolbar-input { width: 50px; font-size: 0.875rem; padding: 0.25rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-align: right; vertical-align: middle; }
+        .toolbar-range { vertical-align: middle; } /* 굵기 슬라이더 정렬 */
+        .toolbar-select { background-color: white; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; padding: 0.25rem 0.5rem; vertical-align: middle; cursor: pointer; line-height: 1.25rem; height: calc(1.25rem + 2px + 0.5rem); max-width: 150px; }
+        .toolbar-select:focus { outline: none; box-shadow: 0 0 0 1px #3b82f6; border-color: #3b82f6; }
+        .color-swatch { display: inline-block; width: 20px; height: 20px; border: 1px solid #a0aec0; border-radius: 4px; cursor: pointer; padding: 0; font-size: 0; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); vertical-align: middle; transition: transform 0.1s ease, box-shadow 0.2s ease-in-out; }
+        .color-swatch:hover { border-color: #4a5568; transform: scale(1.1); }
+        /* 색상 견본 활성 상태 (JS에서 Tailwind 클래스로 제어) */
+        /* .color-swatch.active { box-shadow: 0 0 0 2px #3b82f6; } */
+
+        .toolbar-color-input { width: 24px; height: 24px; padding: 0; border: 1px solid #a0aec0; border-radius: 0.25rem; cursor: pointer; vertical-align: middle; background-color: transparent; appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+        .toolbar-color-input::-webkit-color-swatch-wrapper { padding: 1px; }
+        .toolbar-color-input::-webkit-color-swatch { border: none; border-radius: 0.125rem; }
+        .toolbar-color-input::-moz-color-swatch { border: none; border-radius: 0.125rem; }
+
+        /* --- 페이지 경계 마커 스타일 --- */
+        .corner-marker { position: absolute; width: 10mm; height: 10mm; border-color: #e2e8f0; border-style: solid; pointer-events: none; z-index: 1; /* 핸들보다 뒤에 오도록 */ transition: top 0.3s ease, left 0.3s ease, right 0.3s ease, bottom 0.3s ease; }
+        .corner-marker.tl { border-width: 1px 0 0 1px; }
+        .corner-marker.tr { border-width: 1px 1px 0 0; }
+        .corner-marker.bl { border-width: 0 0 1px 1px; }
+        .corner-marker.br { border-width: 0 1px 1px 0; }
+
+        /* --- 인쇄 전용 스타일 --- */
+        @media print {
+            body { background-color: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+            #main-toolbar { display: none !important; }
+            .main-content-area { padding: 0 !important; overflow: visible !important; height: auto !important; flex-grow: 0 !important; }
+            #page-container { align-items: flex-start !important; width: 100% !important; }
+
+            /* 기본 (세로) 인쇄 */
+            .a4-page {
+                margin: 0 auto !important; padding: 15mm !important; /* 기본 여백 */
+                border: none !important; box-shadow: none !important; overflow: visible !important;
+                aspect-ratio: auto !important; page-break-inside: avoid !important;
+                width: 210mm !important; height: 297mm !important; /* 고정 크기 */
+                max-width: none !important;
+                 /* min-height 제거 */
+            }
+            .a4-page + .a4-page { page-break-before: always !important; break-before: page !important; margin-top: 0 !important; }
+
+            /* 가로 인쇄 (body에 print-landscape 클래스가 있을 때) */
+            body.print-landscape .a4-page {
+                width: 297mm !important; height: 210mm !important; /* 고정 크기 */
+                 /* min-height 제거 */
+            }
+            body.print-landscape .editor img { max-width: 267mm !important; } /* 가로 인쇄 시 이미지 최대 너비 조정 */
+
+            .editor { height: auto !important; min-height: initial !important; overflow: visible !important; background-color: transparent !important; /* 인쇄 시 에디터 배경 투명하게 */ position: relative; z-index: 10; } /* 텍스트가 위로 오도록 */
+            .editor img { max-width: 180mm !important; outline: none !important; } /* 세로 인쇄 시 */
+            .resize-handle { display: none !important; } /* 인쇄 시 핸들 숨김 */
+            .corner-marker { display: none !important; }
+            .line-marker { display: none !important; } /* 인쇄 시 라인 마커 숨김 */
+            /* .drawing-canvas { display: none !important; } */ /* 인쇄 시 캔버스 포함하도록 주석 처리 또는 제거 */
+            .drawing-canvas { position: absolute; top: 0; left: 0; z-index: 5; background-color: transparent !important; } /* 인쇄 시 캔버스 위치 및 배경 설정 */
+             .preview-canvas { display: none !important; } /* 인쇄 시 미리보기 캔버스 숨김 */
+        }
+
+        /* SVG 아이콘 스타일 조정 */
+        .toolbar-button svg {
+            overflow: visible; /* 원형 테두리가 잘리지 않도록 */
+        }
+         .toolbar-button svg circle {
+             stroke: currentColor; /* 테두리 색상을 현재 글자 색상으로 */
+             stroke-width: 1;
+             fill: none; /* 원 내부 채우지 않음 */
+         }
+          .toolbar-button svg path {
+              fill: currentColor; /* 화살표 색상을 현재 글자 색상으로 */
+          }
+
+          /* ==========================================================================
+   Windows XP 스타일 스크롤바 디자인
+   ========================================================================== */
+
+/* 1. 스크롤바 전체 크기 및 코너 설정 */
+::-webkit-scrollbar {
+    width: 17px;
+    height: 17px;
+}
+
+::-webkit-scrollbar-corner {
+    background: #dfdfdf;
+}
+
+/* 2. 스크롤바 트랙 (배경) 스타일 */
+::-webkit-scrollbar-track:vertical {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 1' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1'/%3E%3Cpath stroke='%23f3f1ec' d='M1 0h1'/%3E%3Cpath stroke='%23f4f1ec' d='M2 0h1'/%3E%3Cpath stroke='%23f4f3ee' d='M3 0h1'/%3E%3Cpath stroke='%23f5f4ef' d='M4 0h1'/%3E%3Cpath stroke='%23f6f5f0' d='M5 0h1'/%3E%3Cpath stroke='%23f7f7f3' d='M6 0h1'/%3E%3Cpath stroke='%23f9f8f4' d='M7 0h1'/%3E%3Cpath stroke='%23f9f9f7' d='M8 0h1'/%3E%3Cpath stroke='%23fbfbf8' d='M9 0h1'/%3E%3Cpath stroke='%23fbfbf9' d='M10 0h2'/%3E%3Cpath stroke='%23fdfdfa' d='M12 0h1'/%3E%3Cpath stroke='%23fefefb' d='M13 0h3'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-track:horizontal {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 1 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1M0 16h1'/%3E%3Cpath stroke='%23f3f1ec' d='M0 1h1'/%3E%3Cpath stroke='%23f4f1ec' d='M0 2h1'/%3E%3Cpath stroke='%23f4f3ee' d='M0 3h1'/%3E%3Cpath stroke='%23f5f4ef' d='M0 4h1'/%3E%3Cpath stroke='%23f6f5f0' d='M0 5h1'/%3E%3Cpath stroke='%23f7f7f3' d='M0 6h1'/%3E%3Cpath stroke='%23f9f8f4' d='M0 7h1'/%3E%3Cpath stroke='%23f9f9f7' d='M0 8h1'/%3E%3Cpath stroke='%23fbfbf8' d='M0 9h1'/%3E%3Cpath stroke='%23fbfbf9' d='M0 10h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 12h1'/%3E%3Cpath stroke='%23fefefb' d='M0 13h1m-1 1h1m-1 1h1'/%3E%3C/svg%3E");
+}
+
+/* 3. 스크롤바 막대 (Thumb) 스타일 */
+::-webkit-scrollbar-thumb {
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-color: #c8d6fb;
+    background-size: 7px;
+    border: 1px solid #fff;
+    border-radius: 2px;
+    box-shadow: inset -3px 0 #bad1fc, inset 1px 1px #b7caf5;
+}
+
+::-webkit-scrollbar-thumb:vertical {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 7 8' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eef4fe' d='M0 0h6M0 2h6M0 4h6M0 6h6'/%3E%3Cpath stroke='%23bad1fc' d='M6 0h1M6 2h1M6 4h1'/%3E%3Cpath stroke='%23c8d6fb' d='M0 1h1M0 3h1M0 5h1M0 7h1'/%3E%3Cpath stroke='%238cb0f8' d='M1 1h6M1 3h6M1 5h6M1 7h6'/%3E%3Cpath stroke='%23bad3fc' d='M6 6h1'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+    background-size: 8px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 8 7' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eef4fe' d='M0 0h1m1 0h1m1 0h1m1 0h1M0 1h1m1 0h1m1 0h1m1 0h1M0 2h1m1 0h1m1 0h1m1 0h1M0 3h1m1 0h1m1 0h1m1 0h1M0 4h1m1 0h1m1 0h1m1 0h1M0 5h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%23c8d6fb' d='M1 0h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%238cb0f8' d='M1 1h1m1 0h1m1 0h1m1 0h1M1 2h1m1 0h1m1 0h1m1 0h1M1 3h1m1 0h1m1 0h1m1 0h1M1 4h1m1 0h1m1 0h1m1 0h1M1 5h1m1 0h1m1 0h1m1 0h1M1 6h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%23bad1fc' d='M0 6h1m1 0h1'/%3E%3Cpath stroke='%23bad3fc' d='M4 6h1m1 0h1'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #d8e0fa;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background-color: #a0b8f0;
+    box-shadow: inset -3px 0 #9ab5f8, inset 1px 1px #97b0f0;
+}
+
+
+/* 4. 스크롤바 버튼 (위/아래/좌/우 화살표) 스타일 */
+::-webkit-scrollbar-button:vertical:single-button:start {
+    height: 17px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1M0 1h1M0 2h1M0 3h1M0 4h1M0 5h1M0 6h1M0 7h1M0 8h1M0 9h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m15 0h1M0 16h1m15 0h1'/%3E%3Cpath stroke='%23fdfdfa' d='M1 0h1'/%3E%3Cpath stroke='%23fff' d='M2 0h14M1 1h1m13 0h1M1 2h1m13 0h1M1 3h1m13 0h1M1 4h1m13 0h1M1 5h1m13 0h1M1 6h1m13 0h1M1 7h1m13 0h1M1 8h1m13 0h1M1 9h1m13 0h1M1 10h1m13 0h1M1 11h1m13 0h1M1 12h1m13 0h1M1 13h1m13 0h1M1 14h1m13 0h1M2 15h13'/%3E%3Cpath stroke='%23e6eefc' d='M2 1h1'/%3E%3Cpath stroke='%23d0dffc' d='M3 1h1M2 2h1'/%3E%3Cpath stroke='%23cad8f9' d='M4 1h1M2 3h1'/%3E%3Cpath stroke='%23c4d2f7' d='M5 1h1'/%3E%3Cpath stroke='%23c0d0f7' d='M6 1h1'/%3E%3Cpath stroke='%23bdcef7' d='M7 1h1M2 6h1'/%3E%3Cpath stroke='%23bbcdf5' d='M8 1h1'/%3E%3Cpath stroke='%23b8cbf6' d='M9 1h1M2 7h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 1h1M2 8h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 1h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 1h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 1h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 1h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 1h1'/%3E%3Cpath stroke='%23e1eafe' d='M3 2h1'/%3E%3Cpath stroke='%23dae6fe' d='M4 2h1M3 3h1'/%3E%3Cpath stroke='%23d4e1fc' d='M5 2h1M3 4h1'/%3E%3Cpath stroke='%23d1e0fd' d='M6 2h1M4 4h1'/%3E%3Cpath stroke='%23d0ddfc' d='M7 2h1M3 5h1'/%3E%3Cpath stroke='%23cedbfd' d='M8 2h1M6 3h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 2h1M7 3h1M5 5h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 2h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 2h1m-8 8h1m1 0h1'/%3E%3Cpath stroke='%23c2d3fc' d='M12 2h1m-2 1h1m-9 7h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 2h1m-1 2h1m-9 9h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 2h1M5 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 2h1'/%3E%3Cpath stroke='%23d8e3fc' d='M4 3h1'/%3E%3Cpath stroke='%23d1defd' d='M5 3h1'/%3E%3Cpath stroke='%23c9d8fc' d='M8 3h1M6 4h2M5 6h2M3 7h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 3h1M3 9h1m3 0h1'/%3E%3Cpath stroke='%23c5d3fc' d='M10 3h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 3h1M9 4h1m-7 7h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 3h1'/%3E%3Cpath stroke='%23baccf4' d='M14 3h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 3h1'/%3E%3Cpath stroke='%23c4d4f7' d='M2 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M5 4h1M3 6h1'/%3E%3Cpath stroke='%23c8d5fb' d='M8 4h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 4h3M9 5h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 4h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 4h1'/%3E%3Cpath stroke='%23bed0f8' d='M2 5h1'/%3E%3Cpath stroke='%23ceddfd' d='M4 5h1'/%3E%3Cpath stroke='%23c8d6fb' d='M6 5h2M3 8h2'/%3E%3Cpath stroke='%234d6185' d='M8 5h1M7 6h3M6 7h5M5 8h3m1 0h3M4 9h3m3 0h3m-8 1h1m5 0h1'/%3E%3Cpath stroke='%23bacdfc' d='M10 5h1m1 0h2M3 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 5h1m-2 1h1m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 5h1'/%3E%3Cpath stroke='%23cddafc' d='M4 6h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 6h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 6h1'/%3E%3Cpath stroke='%23cad8fd' d='M4 7h2'/%3E%3Cpath stroke='%23b6cefb' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23bacbf4' d='M14 7h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 7h1m-1 1h1m-1 5h1'/%3E%3Cpath stroke='%23c1d3fb' d='M8 8h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 8h1m-5 5h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 8h1'/%3E%3Cpath stroke='%23b4c8f6' d='M2 9h1'/%3E%3Cpath stroke='%23c2d5fc' d='M8 9h1m-1 1h1m-3 1h2'/%3E%3Cpath stroke='%23bdd3fb' d='M9 9h1m-2 3h1'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M2 10h1'/%3E%3Cpath stroke='%23c3d5fd' d='M7 10h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 10h1m-1 1h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h1m1 0h1m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M2 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M5 11h1'/%3E%3Cpath stroke='%23c1d5fb' d='M8 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M2 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M5 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M6 12h2'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M2 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M3 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M4 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M7 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M2 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M3 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M4 14h1m3 0h1'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M1 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M1 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M2 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M3 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M4 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M5 16h1'/%3E%3Cpath stroke='%237da0d4' d='M6 16h1m3 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M7 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M8 16h2'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:vertical:single-button:end {
+    height: 17px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1M0 1h1M0 2h1M0 3h1M0 4h1M0 5h1M0 6h1M0 7h1M0 8h1M0 9h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m15 0h1M0 16h1m15 0h1'/%3E%3Cpath stroke='%23fdfdfa' d='M1 0h1'/%3E%3Cpath stroke='%23fff' d='M2 0h14M1 1h1m13 0h1M1 2h1m13 0h1M1 3h1m13 0h1M1 4h1m13 0h1M1 5h1m13 0h1M1 6h1m13 0h1M1 7h1m13 0h1M1 8h1m13 0h1M1 9h1m13 0h1M1 10h1m13 0h1M1 11h1m13 0h1M1 12h1m13 0h1M1 13h1m13 0h1M1 14h1m13 0h1M2 15h13'/%3E%3Cpath stroke='%23e6eefc' d='M2 1h1'/%3E%3Cpath stroke='%23d0dffc' d='M3 1h1M2 2h1'/%3E%3Cpath stroke='%23cad8f9' d='M4 1h1M2 3h1'/%3E%3Cpath stroke='%23c4d2f7' d='M5 1h1'/%3E%3Cpath stroke='%23c0d0f7' d='M6 1h1'/%3E%3Cpath stroke='%23bdcef7' d='M7 1h1M2 6h1'/%3E%3Cpath stroke='%23bbcdf5' d='M8 1h1'/%3E%3Cpath stroke='%23b8cbf6' d='M9 1h1M2 7h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 1h1M2 8h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 1h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 1h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 1h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 1h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 1h1'/%3E%3Cpath stroke='%23e1eafe' d='M3 2h1'/%3E%3Cpath stroke='%23dae6fe' d='M4 2h1M3 3h1'/%3E%3Cpath stroke='%23d4e1fc' d='M5 2h1M3 4h1'/%3E%3Cpath stroke='%23d1e0fd' d='M6 2h1M4 4h1'/%3E%3Cpath stroke='%23d0ddfc' d='M7 2h1M3 5h1'/%3E%3Cpath stroke='%23cedbfd' d='M8 2h1M6 3h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 2h1M7 3h1M5 5h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 2h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 2h1m-8 8h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 2h1m-2 1h1m-9 7h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 2h1m-1 2h1m-9 9h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 2h1M5 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 2h1'/%3E%3Cpath stroke='%23d8e3fc' d='M4 3h1'/%3E%3Cpath stroke='%23d1defd' d='M5 3h1'/%3E%3Cpath stroke='%23c9d8fc' d='M8 3h1M6 4h2M6 6h2M3 7h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 3h1M3 9h3'/%3E%3Cpath stroke='%23c5d3fc' d='M10 3h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 3h1M9 4h1m-7 7h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 3h1'/%3E%3Cpath stroke='%23baccf4' d='M14 3h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 3h1'/%3E%3Cpath stroke='%23c4d4f7' d='M2 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M5 4h1M3 6h1'/%3E%3Cpath stroke='%23c8d5fb' d='M8 4h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 4h3M9 5h1M8 6h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 4h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 4h1'/%3E%3Cpath stroke='%23bed0f8' d='M2 5h1'/%3E%3Cpath stroke='%23ceddfd' d='M4 5h1'/%3E%3Cpath stroke='%23c8d6fb' d='M6 5h3M3 8h2'/%3E%3Cpath stroke='%23bacdfc' d='M10 5h1m1 0h2M3 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 5h1M9 6h2m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 5h1'/%3E%3Cpath stroke='%23cddafc' d='M4 6h1'/%3E%3Cpath stroke='%234d6185' d='M5 6h1m5 0h1M4 7h3m3 0h3M5 8h3m1 0h3M6 9h5m-4 1h3m-2 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 6h1'/%3E%3Cpath stroke='%23c1d3fb' d='M7 7h2M8 8h1'/%3E%3Cpath stroke='%23b6cefb' d='M9 7h1m2 1h1m-2 1h2'/%3E%3Cpath stroke='%23bacbf4' d='M14 7h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 7h1m-1 1h1m-1 5h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 8h1m-5 5h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 8h1'/%3E%3Cpath stroke='%23b4c8f6' d='M2 9h1'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M2 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M2 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M5 11h1'/%3E%3Cpath stroke='%23c2d5fc' d='M6 11h2'/%3E%3Cpath stroke='%23bad4fc' d='M9 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M2 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M5 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M6 12h2'/%3E%3Cpath stroke='%23bdd3fb' d='M8 12h1'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M2 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M3 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M4 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M7 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M2 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M3 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M4 14h1m3 0h1'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M1 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M1 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M2 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M3 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M4 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M5 16h1'/%3E%3Cpath stroke='%237da0d4' d='M6 16h1m3 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M7 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M8 16h2'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E")
+}
+
+::-webkit-scrollbar-button:horizontal:single-button:start {
+    width: 17px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h17m-1 1h1m-1 14h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 1h1'/%3E%3Cpath stroke='%23fff' d='M1 1h15M0 2h1m14 0h1M0 3h1m14 0h1M0 4h1m14 0h1M0 5h1m14 0h1M0 6h1m14 0h1M0 7h1m14 0h1M0 8h1m14 0h1M0 9h1m14 0h1M0 10h1m14 0h1M0 11h1m14 0h1M0 12h1m14 0h1M0 13h1m14 0h1M0 14h1m14 0h1M1 15h14'/%3E%3Cpath stroke='%23e6eefc' d='M1 2h1'/%3E%3Cpath stroke='%23d0dffc' d='M2 2h1M1 3h1'/%3E%3Cpath stroke='%23cad8f9' d='M3 2h1M1 4h1'/%3E%3Cpath stroke='%23c4d2f7' d='M4 2h1'/%3E%3Cpath stroke='%23c0d0f7' d='M5 2h1'/%3E%3Cpath stroke='%23bdcef7' d='M6 2h1M1 7h1'/%3E%3Cpath stroke='%23bbcdf5' d='M7 2h2'/%3E%3Cpath stroke='%23b8cbf6' d='M9 2h1M1 8h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 2h1M1 9h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 2h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 2h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 2h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 2h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 2h1'/%3E%3Cpath stroke='%23e1eafe' d='M2 3h1'/%3E%3Cpath stroke='%23dae6fe' d='M3 3h1M2 4h1'/%3E%3Cpath stroke='%23d4e1fc' d='M4 3h1M2 5h1'/%3E%3Cpath stroke='%23d1e0fd' d='M5 3h1M3 5h1'/%3E%3Cpath stroke='%23d0ddfc' d='M6 3h1M2 6h1'/%3E%3Cpath stroke='%23cedbfd' d='M7 3h1M5 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M8 3h1M4 5h1M2 7h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 3h1M6 4h1M4 6h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 3h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 3h1m-9 7h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 3h1m-2 1h1M2 10h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 3h1m-1 2h1M4 13h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 3h1M4 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 3h1'/%3E%3Cpath stroke='%23d8e3fc' d='M3 4h1'/%3E%3Cpath stroke='%23d1defd' d='M4 4h1'/%3E%3Cpath stroke='%23c9d8fc' d='M7 4h1M5 5h2M4 7h1M2 8h1'/%3E%3Cpath stroke='%234d6185' d='M8 4h1M7 5h3M6 6h3M5 7h3M4 8h3M5 9h3m-2 1h3m-2 1h3m-2 1h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 4h1'/%3E%3Cpath stroke='%23c5d3fc' d='M10 4h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 4h1M2 11h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 4h1'/%3E%3Cpath stroke='%23baccf4' d='M14 4h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 4h1'/%3E%3Cpath stroke='%23c4d4f7' d='M1 5h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 5h3M9 6h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 5h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 5h1'/%3E%3Cpath stroke='%23bed0f8' d='M1 6h1'/%3E%3Cpath stroke='%23ceddfd' d='M3 6h1'/%3E%3Cpath stroke='%23c8d6fb' d='M5 6h1M2 9h3'/%3E%3Cpath stroke='%23bacdfc' d='M10 6h1m1 0h2M2 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 6h1M8 7h3m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 6h1'/%3E%3Cpath stroke='%23cddafc' d='M3 7h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 7h1'/%3E%3Cpath stroke='%23cad8fd' d='M3 8h1'/%3E%3Cpath stroke='%23c1d3fb' d='M7 8h2'/%3E%3Cpath stroke='%23b6cefb' d='M9 8h3M9 9h4'/%3E%3Cpath stroke='%23bacbf4' d='M14 8h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 8h1m-1 1h1m-1 4h1'/%3E%3Cpath stroke='%23bdd3fb' d='M8 9h1m-2 3h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 9h1m-5 4h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 9h1'/%3E%3Cpath stroke='%23b1c7f6' d='M1 10h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%239fb5d2' d='M16 10h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23adc3f6' d='M1 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M4 11h1'/%3E%3Cpath stroke='%23c2d5fc' d='M5 11h2'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M1 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M4 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M5 12h2'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M1 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M2 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M3 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M6 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M7 13h1'/%3E%3Cpath stroke='%23b8cffa' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M1 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M2 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M3 14h1m3 0h2'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M0 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M0 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M1 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M2 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M3 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M4 16h1'/%3E%3Cpath stroke='%237da0d4' d='M5 16h1m4 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M6 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M7 16h3'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E")
+}
+
+::-webkit-scrollbar-button:horizontal:single-button:end {
+    width: 17px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h17m-1 1h1m-1 14h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 1h1'/%3E%3Cpath stroke='%23fff' d='M1 1h15M0 2h1m14 0h1M0 3h1m14 0h1M0 4h1m14 0h1M0 5h1m14 0h1M0 6h1m14 0h1M0 7h1m14 0h1M0 8h1m14 0h1M0 9h1m14 0h1M0 10h1m14 0h1M0 11h1m14 0h1M0 12h1m14 0h1M0 13h1m14 0h1M0 14h1m14 0h1M1 15h14'/%3E%3Cpath stroke='%23e6eefc' d='M1 2h1'/%3E%3Cpath stroke='%23d0dffc' d='M2 2h1M1 3h1'/%3E%3Cpath stroke='%23cad8f9' d='M3 2h1M1 4h1'/%3E%3Cpath stroke='%23c4d2f7' d='M4 2h1'/%3E%3Cpath stroke='%23c0d0f7' d='M5 2h1'/%3E%3Cpath stroke='%23bdcef7' d='M6 2h1M1 7h1'/%3E%3Cpath stroke='%23bbcdf5' d='M7 2h2'/%3E%3Cpath stroke='%23b8cbf6' d='M9 2h1M1 8h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 2h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 2h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 2h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 2h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 2h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 2h1'/%3E%3Cpath stroke='%23e1eafe' d='M2 3h1'/%3E%3Cpath stroke='%23dae6fe' d='M3 3h1M2 4h1'/%3E%3Cpath stroke='%23d4e1fc' d='M4 3h1M2 5h1'/%3E%3Cpath stroke='%23d1e0fd' d='M5 3h1M3 5h1'/%3E%3Cpath stroke='%23d0ddfc' d='M6 3h1M2 6h1'/%3E%3Cpath stroke='%23cedbfd' d='M7 3h1M5 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M8 3h1M4 5h1M2 7h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 3h1M6 4h1M4 6h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 3h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 3h1m-9 7h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 3h1m-2 1h1M2 10h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 3h1m-1 2h1M4 13h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 3h1M4 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 3h1'/%3E%3Cpath stroke='%23d8e3fc' d='M3 4h1'/%3E%3Cpath stroke='%23d1defd' d='M4 4h1'/%3E%3Cpath stroke='%234d6185' d='M7 4h1M6 5h3M7 6h3M8 7h3M9 8h3M8 9h3m-4 1h3m-4 1h3m-2 1h1'/%3E%3Cpath stroke='%23c8d6fb' d='M8 4h1M5 6h2'/%3E%3Cpath stroke='%23c5d5fc' d='M9 4h1M2 9h5'/%3E%3Cpath stroke='%23c5d3fc' d='M10 4h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 4h1M9 5h1m-8 6h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 4h1'/%3E%3Cpath stroke='%23baccf4' d='M14 4h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 4h1'/%3E%3Cpath stroke='%23c4d4f7' d='M1 5h1'/%3E%3Cpath stroke='%23c9d8fc' d='M5 5h1M4 7h3M2 8h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 5h3M7 7h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 5h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 5h1'/%3E%3Cpath stroke='%23bed0f8' d='M1 6h1'/%3E%3Cpath stroke='%23ceddfd' d='M3 6h1'/%3E%3Cpath stroke='%23bacdfc' d='M10 6h1m1 0h2M2 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 6h1m0 1h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 6h1'/%3E%3Cpath stroke='%23cddafc' d='M3 7h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 7h1'/%3E%3Cpath stroke='%23cad8fd' d='M3 8h3'/%3E%3Cpath stroke='%23c1d3fb' d='M6 8h3'/%3E%3Cpath stroke='%23bacbf4' d='M14 8h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 8h1m-1 5h1'/%3E%3Cpath stroke='%23b4c8f6' d='M1 9h1'/%3E%3Cpath stroke='%23c2d5fc' d='M7 9h1m-3 2h1'/%3E%3Cpath stroke='%23b6cefb' d='M11 9h2'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M1 10h1'/%3E%3Cpath stroke='%23c3d5fd' d='M6 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M1 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M4 11h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M1 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M4 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M5 12h2'/%3E%3Cpath stroke='%23bbd3fd' d='M8 12h1'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M1 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M2 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M3 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M6 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M7 13h1'/%3E%3Cpath stroke='%23b8cffa' d='M8 13h1'/%3E%3Cpath stroke='%23b6cdfb' d='M9 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M1 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M2 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M3 14h1m3 0h2'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M0 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M0 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M1 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M2 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M3 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M4 16h1'/%3E%3Cpath stroke='%237da0d4' d='M5 16h1m4 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M6 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M7 16h3'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E")
+}
+
+/* ==========================================================================
+   8. 동적 창 상태 스타일 (최대화, 크기 조절 핸들)
+   ========================================================================== */
+
+/* 창이 '최대화'되었을 때 적용될 스타일 */
+.window.maximized {
+    /* !important를 사용하여 다른 스타일보다 우선 적용되도록 함 */
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100% - 30px) !important; /* 화면 높이에서 작업표시줄 높이(30px) 제외 */
+    
+    /* transform은 중앙 정렬에 사용되었으므로 초기화 */
+    transform: none !important;
+}
+
+/* 크기 조절을 위한 핸들 (눈에 보이지 않음) */
+.resizer {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: transparent;
+    z-index: 10;
+}
+
+/* 각 방향별 핸들의 위치와 마우스 커서 모양 설정 */
+.resizer.top-left     { top: -4px; left: -4px; cursor: nwse-resize; }
+.resizer.top-right    { top: -4px; right: -4px; cursor: nesw-resize; }
+.resizer.bottom-left  { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.resizer.bottom-right { bottom: -4px; right: -4px; cursor: nwse-resize; }
+.resizer.top          { top: -4px; left: 4px; right: 4px; cursor: ns-resize; }
+.resizer.right        { top: 4px; right: -4px; bottom: 4px; cursor: ew-resize; }
+.resizer.bottom       { bottom: -4px; left: 4px; right: 4px; cursor: ns-resize; }
+.resizer.left         { top: 4px; left: -4px; bottom: 4px; cursor: ew-resize; }
+
+/* ==========================================================================
+   9. 새로운 제목 표시줄 버튼 스타일
+   ========================================================================== */
+
+.title-bar-controls button {
+    border-radius: 3px;
+    transition: filter 0.1s;
+}
+.title-bar-controls button:hover {
+    filter: brightness(120%);
+}
+.title-bar-controls button:active {
+    filter: brightness(90%);
+}
+
+/* 기존 버튼의 SVG 아이콘을 숨깁니다 */
+.title-bar-controls button[aria-label="Minimize"],
+.title-bar-controls button[aria-label="Maximize"],
+.title-bar-controls button[aria-label="Restore"],
+.title-bar-controls button[aria-label="Close"] {
+    background-image: none;
+}
+
+/* 최소화 버튼 아이콘 */
+.title-bar-controls button[aria-label="Minimize"]::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 13px;
+    height: 3px;
+    width: 8px;
+    background-color: white;
+}
+
+/* 최대화 버튼 아이콘 */
+.title-bar-controls button[aria-label="Maximize"]::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    box-shadow: inset 0 3px white, inset 0 0 0 1px white;
+    height: 12px;
+    width: 12px;
+}
+
+/* 복원(Restore) 버튼 아이콘 */
+.title-bar-controls button[aria-label="Restore"]::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 4px;
+    box-shadow: inset 0 2px white, inset 0 0 0 1px white;
+    height: 8px;
+    width: 8px;
+}
+.title-bar-controls button[aria-label="Restore"]::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 7px;
+    box-shadow: inset 0 2px white, inset 0 0 0 1px white, 1px -1px #136dff;
+    height: 8px;
+    width: 8px;
+    background-color: #136dff;
+}
+
+/* 닫기 버튼 아이콘 */
+.title-bar-controls button[aria-label="Close"] {
+    box-shadow: inset 0 -1px 2px 1px #da4600;
+    background-image: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, white 100% );
+}
+.title-bar-controls button[aria-label="Close"]::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 2px;
+    transform: rotate(45deg);
+    height: 16px;
+    width: 2px;
+    background-color: white;
+}
+.title-bar-controls button[aria-label="Close"]::after {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 2px;
+    transform: rotate(-45deg);
+    height: 16px;
+    width: 2px;
+    background-color: white;
+}
+
+/* 기존 버튼의 SVG 아이콘을 숨깁니다 */
+.title-bar-controls button svg {
+    display: none;
+}
+
+.desktop-icon.selected {
+    border: 1px dotted #000000 !important;
+    outline: none;
+}
+
+
+
+
+
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link href="./웹 오피스_files/css2" rel="stylesheet">
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sticky{position:sticky}.top-0{top:0px}.z-20{z-index:20}.ml-1{margin-left:0.25rem}.mr-1{margin-right:0.25rem}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.hidden{display:none}.h-5{height:1.25rem}.w-20{width:5rem}.w-6{width:1.5rem}.flex-grow{flex-grow:1}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.gap-2{gap:0.5rem}.space-x-0\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.125rem * var(--tw-space-x-reverse));margin-left:calc(0.125rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-1 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.25rem * var(--tw-space-x-reverse));margin-left:calc(0.25rem * calc(1 - var(--tw-space-x-reverse)))}.overflow-y-auto{overflow-y:auto}.rounded{border-radius:0.25rem}.border{border-width:1px}.border-l{border-left-width:1px}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219 / var(--tw-border-opacity, 1))}.border-gray-400{--tw-border-opacity:1;border-color:rgb(156 163 175 / var(--tw-border-opacity, 1))}.border-blue-300{--tw-border-opacity:1;border-color:rgb(147 197 253 / var(--tw-border-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.bg-gray-300{--tw-bg-opacity:1;background-color:rgb(209 213 219 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.p-1{padding:0.25rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.pl-1{padding-left:0.25rem}.text-right{text-align:right}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-xs{font-size:0.75rem;line-height:1rem}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000)}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-blue-500{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}.ring-offset-1{--tw-ring-offset-width:1px}</style></head>
+<body class="bg-gray-100"> <div id="main-toolbar" class="bg-gray-300 px-4 py-2 shadow-md sticky top-0 z-20">
+        <div id="toolbar-content" class="flex items-center flex-wrap gap-2">
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                <label for="padding-vertical" class="toolbar-label">상하(mm):</label>
+                <input type="number" id="padding-vertical" class="toolbar-input" value="20" min="5" max="50" step="1">
+                <label for="padding-horizontal" class="toolbar-label ml-1">좌우(mm):</label>
+                <input type="number" id="padding-horizontal" class="toolbar-input" value="30" min="5" max="50" step="1">
+            </div>
+
+             <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                 <button id="undoBtn" class="toolbar-button" title="실행 취소 (Ctrl+Z)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" fill="none"></circle>
+                         <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
+                    </svg>
+                 </button>
+                 <button id="redoBtn" class="toolbar-button" title="다시 실행 (Ctrl+Y)">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" fill="none"></circle>
+                         <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"></path>
+                     </svg>
+                 </button>
+            </div>
+
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                <label for="fontFamilySelect" class="toolbar-label">글꼴:</label>
+                <select id="fontFamilySelect" class="toolbar-select mr-1" title="글꼴 선택">
+                    <option value="Inter" selected="" style="font-family: &#39;Inter&#39;, sans-serif;">Inter (기본)</option>
+                    <option value="Arial" style="font-family: Arial, sans-serif;">Arial</option>
+                    <option value="Times New Roman" style="font-family: &#39;Times New Roman&#39;, serif;">Times New Roman</option>
+                    <option value="Courier New" style="font-family: &#39;Courier New&#39;, monospace;">Courier New</option>
+                    <option value="Verdana" style="font-family: Verdana, sans-serif;">Verdana</option>
+                    <option value="Noto Sans KR" style="font-family: &#39;Noto Sans KR&#39;, sans-serif;">Noto Sans KR</option>
+                    <option value="Nanum Gothic" style="font-family: &#39;Nanum Gothic&#39;, sans-serif;">나눔고딕</option>
+                    <option value="Malgun Gothic" style="font-family: &#39;Malgun Gothic&#39;, sans-serif;">맑은 고딕</option>
+                    <option value="Gulim" style="font-family: Gulim, sans-serif;">굴림</option>
+                    <option value="Dotum" style="font-family: Dotum, sans-serif;">돋움</option>
+                    <option value="Batang" style="font-family: Batang, serif;">바탕</option>
+                </select>
+
+                <label for="fontSizeSelect" class="toolbar-label">크기:</label>
+                <select id="fontSizeSelect" class="toolbar-select w-20" title="글자 크기">
+                    <option value="1">8 pt</option> <option value="2">9 pt</option> <option value="3" selected="">11 pt</option> <option value="4">14 pt</option> <option value="5">18 pt</option> <option value="6">24 pt</option> <option value="7">36 pt</option>
+                </select>
+                <button class="toolbar-button" data-command="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+                <button class="toolbar-button" data-command="italic" title="기울임꼴 (Ctrl+I)"><i>I</i></button>
+                <button class="toolbar-button" data-command="underline" title="밑줄 (Ctrl+U)"><u>U</u></button>
+                <button class="toolbar-button" data-command="strikeThrough" title="취소선"><del>S</del></button>
+                <span class="toolbar-label border-l border-gray-300 pl-1 ml-1">색:</span>
+                <button class="color-swatch ring-2 ring-offset-1 ring-blue-500" data-command="foreColor" data-value="#000000" style="background-color: #000000;" title="검정"></button>
+                <button class="color-swatch" data-command="foreColor" data-value="#FF0000" style="background-color: #FF0000;" title="빨강"></button>
+                <button class="color-swatch" data-command="foreColor" data-value="#0000FF" style="background-color: #0000FF;" title="파랑"></button>
+                <button class="color-swatch" data-command="foreColor" data-value="#008000" style="background-color: #008000;" title="녹색"></button>
+                <button class="color-swatch" data-command="foreColor" data-value="#FFA500" style="background-color: #FFA500;" title="주황"></button>
+                <button class="color-swatch" data-command="foreColor" data-value="#808080" style="background-color: #808080;" title="회색"></button>
+                <input type="color" id="foreColorPicker" class="toolbar-color-input" title="다른 색 선택...">
+            </div>
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                 <button class="toolbar-button bg-blue-100 border-blue-300" data-command="justifyLeft" title="왼쪽 정렬">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-text-left inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2 12.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"></path></svg>
+                 </button>
+                 <button class="toolbar-button" data-command="justifyCenter" title="가운데 정렬">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-text-center inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 12.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"></path></svg>
+                 </button>
+                 <button class="toolbar-button" data-command="justifyRight" title="오른쪽 정렬">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-text-right inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 12.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-4-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m4-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-4-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"></path></svg>
+                 </button>
+                 <button class="toolbar-button" data-command="justifyFull" title="양쪽 정렬">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-justify inline-block" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2 12.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                <button id="insertImageBtn" class="toolbar-button" title="이미지 삽입 (파일 선택)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-image inline-block" viewBox="0 0 16 16">
+                        <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"></path>
+                        <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12"></path>
+                    </svg>
+                    <span class="ml-1">이미지</span>
+                </button>
+                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            </div>
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                 <button id="toggleDrawBtn" class="toolbar-button" title="그리기 모드 켜기/끄기">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill inline-block" viewBox="0 0 16 16">
+                       <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"></path>
+                     </svg>
+                     <span class="ml-1">그리기</span>
+                 </button>
+                 <div id="drawing-toolbar" class="hidden items-center space-x-1 ml-1 pl-1 border-l border-gray-300">
+                     <button class="toolbar-button drawing-tool-btn active" data-tool="pen" title="펜">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil inline-block" viewBox="0 0 16 16">
+                           <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.5-.5H4v-.5a.5.5 0 0 1 .293-.455"></path>
+                         </svg>
+                     </button>
+                     <button class="toolbar-button drawing-tool-btn" data-tool="rectangle" title="사각형">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-square inline-block" viewBox="0 0 16 16">
+                           <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"></path>
+                         </svg>
+                     </button>
+                     <button class="toolbar-button drawing-tool-btn" data-tool="circle" title="원">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle inline-block" viewBox="0 0 16 16">
+                           <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"></path>
+                         </svg>
+                     </button>
+                      <button class="toolbar-button drawing-tool-btn" data-tool="triangle" title="삼각형">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-triangle inline-block" viewBox="0 0 16 16">
+                           <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.163.075H1.194a.2.2 0 0 1-.163-.075.2.2 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m-1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"></path>
+                         </svg>
+                     </button>
+                     <span class="toolbar-label border-l border-gray-300 pl-1 ml-1">|</span> <label for="penThickness" class="toolbar-label">굵기:</label>
+                     <input type="range" id="penThickness" class="toolbar-range h-5" min="1" max="20" value="2" title="펜 굵기">
+                     <span id="penThicknessValue" class="text-xs font-mono w-6 text-right">2</span>
+
+                     <span class="toolbar-label border-l border-gray-300 pl-1 ml-1">펜 색:</span>
+                     <button class="color-swatch" data-canvas-command="penColor" data-value="#000000" style="background-color: #000000;" title="검정"></button>
+                     <button class="color-swatch" data-canvas-command="penColor" data-value="#FF0000" style="background-color: #FF0000;" title="빨강"></button>
+                     <button class="color-swatch" data-canvas-command="penColor" data-value="#0000FF" style="background-color: #0000FF;" title="파랑"></button>
+                     <button class="color-swatch" data-canvas-command="penColor" data-value="#008000" style="background-color: #008000;" title="녹색"></button>
+                     <input type="color" id="penColorPicker" class="toolbar-color-input" title="다른 색 선택...">
+
+                     <button id="eraserBtn" class="toolbar-button drawing-tool-btn ml-1" data-tool="eraser" title="지우개">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eraser-fill inline-block" viewBox="0 0 16 16">
+                           <path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm.66 11.34L3.453 8.254 1.914 9.793a1 1 0 0 0 0 1.414l2.5 2.5a1 1 0 0 0 .707.293H7.88a1 1 0 0 0 .707-.293z"></path>
+                         </svg>
+                     </button>
+                     <button id="clearCanvasBtn" class="toolbar-button ml-1" title="모두 지우기">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill inline-block" viewBox="0 0 16 16">
+                           <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path>
+                         </svg>
+                     </button>
+                 </div>
+            </div>
+
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                <button id="toggleOrientationBtn" class="toolbar-button" title="페이지 방향 전환">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat inline-block" viewBox="0 0 16 16">
+                      <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"></path>
+                      <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.5A5.002 5.002 0 0 0 8 3M3.5 13A5.003 5.003 0 0 0 8 15c1.552 0 2.94-.707 3.857-1.818a.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.5a5.002 5.002 0 0 0 0 4"></path>
+                    </svg>
+                    <span id="orientationText" class="ml-1">세로</span>
+                </button>
+            </div>
+
+            <div class="toolbar-group inline-flex items-center bg-white border border-gray-400 rounded p-1 space-x-0.5">
+                 <button id="printBtn" class="toolbar-button" title="인쇄">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-printer-fill inline-block" viewBox="0 0 16 16">
+                         <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"></path>
+                         <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"></path>
+                     </svg>
+                     <span class="ml-1">인쇄</span>
+                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content-area flex-grow p-8 overflow-y-auto">
+        <div id="page-container">
+            <div class="a4-page a4-portrait" style="padding: 20mm 30mm;">
+                 <canvas class="drawing-canvas" width="800" height="1123" id="canvas-1"></canvas> <div class="corner-marker tl" style="top: calc(74.5906px); left: calc(112.386px);"></div> <div class="corner-marker tr" style="top: calc(74.5906px); right: calc(112.386px);"></div>
+                 <div class="corner-marker bl" style="bottom: calc(74.5906px); left: calc(112.386px);"></div> <div class="corner-marker br" style="bottom: calc(74.5906px); right: calc(112.386px);"></div>
+                <div id="editor-1" contenteditable="true" class="editor" spellcheck="false"></div>
+                 <div class="line-marker" style="top: 76.5781px;"></div></div>
+        </div>
+    </div>
+	
+	
+	
+
+    <script>
+        // DOM 요소 가져오기
+        const pageContainer = document.getElementById('page-container');
+        const verticalPaddingInput = document.getElementById('padding-vertical');
+        const horizontalPaddingInput = document.getElementById('padding-horizontal');
+        const toolbarContent = document.getElementById('toolbar-content');
+        const colorPicker = document.getElementById('foreColorPicker');
+        const fontSizeSelect = document.getElementById('fontSizeSelect');
+        const fontFamilySelect = document.getElementById('fontFamilySelect');
+        const insertImageBtn = document.getElementById('insertImageBtn');
+        const imageUpload = document.getElementById('imageUpload');
+        const printBtn = document.getElementById('printBtn');
+        const toggleOrientationBtn = document.getElementById('toggleOrientationBtn'); // 방향 전환 버튼
+        const orientationText = document.getElementById('orientationText'); // 방향 텍스트
+        const toggleDrawBtn = document.getElementById('toggleDrawBtn'); // 그리기 버튼
+        const drawingToolbar = document.getElementById('drawing-toolbar'); // 그리기 도구 모음
+        const penThicknessSlider = document.getElementById('penThickness'); // 펜 굵기 슬라이더
+        const penThicknessValueSpan = document.getElementById('penThicknessValue'); // 펜 굵기 값 표시
+        const penColorPicker = document.getElementById('penColorPicker'); // 펜 색상 선택기
+        const eraserBtn = document.getElementById('eraserBtn'); // 지우개 버튼
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn'); // 모두 지우기 버튼
+
+        // Undo/Redo Buttons
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+
+
+        let pageCount = 1;
+        let lastSelection = { editor: null, range: null };
+        let currentPageOrientation = 'portrait'; // 현재 페이지 방향 ('portrait' 또는 'landscape')
+        let isProcessingBackspace = false; // Backspace 처리 중 플래그 (input 이벤트 충돌 방지)
+
+        // --- 그리기 관련 상태 변수 ---
+        let isDrawingModeActive = false;
+        let isPainting = false;
+        let isErasing = false;
+        let currentDrawingTool = 'pen'; // 'pen', 'rectangle', 'circle', 'triangle', 'eraser'
+        let currentPenColor = '#000000'; // 기본 펜 색상
+        let currentPenThickness = 2; // 기본 펜 굵기
+        let startDrawX = 0; // 도형 그리기 시작 X
+        let startDrawY = 0; // 도형 그리기 시작 Y
+        let lastX = 0; // 자유선 그리기 마지막 X
+        let lastY = 0; // 자유선 그리기 마지막 Y
+        const canvasContexts = new Map(); // 페이지별 캔버스 컨텍스트 저장
+        let previewCanvas = null; // 도형 미리보기용 임시 캔버스
+        let previewCtx = null;    // 임시 캔버스 컨텍스트
+        let currentDrawingCanvas = null; // 현재 그리고 있는 캔버스 요소 참조
+
+        // --- 이미지 리사이즈 관련 변수 ---
+        let selectedImage = null; // 현재 선택된 이미지 요소
+        let currentResizeHandle = null; // 현재 드래그 중인 리사이즈 핸들
+        let startX, startY, startWidth; // 리사이즈 시작 시 정보
+
+        /**
+         * 캔버스 크기 조절 및 내용 유지
+         * @param {HTMLCanvasElement} canvas
+         * @param {HTMLElement} page
+         */
+        function resizeCanvas(canvas, page) {
+             const ctx = canvas.getContext('2d');
+             const tempCanvas = document.createElement('canvas');
+             tempCanvas.width = canvas.width;
+             tempCanvas.height = canvas.height;
+             const tempCtx = tempCanvas.getContext('2d');
+             if (canvas.width > 0 && canvas.height > 0) {
+                try { tempCtx.drawImage(canvas, 0, 0); }
+                catch (e) { console.warn("Could not copy canvas content before resize:", e); }
+             }
+             const rect = page.getBoundingClientRect();
+             canvas.width = page.offsetWidth;
+             canvas.height = page.offsetHeight;
+             if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+                 try {
+                    ctx.drawImage(tempCanvas, 0, 0);
+                    console.log(`Canvas content restored after resize for ${canvas.id}`);
+                 } catch (e) { console.warn("Could not restore canvas content after resize:", e); }
+             }
+        }
+
+        /**
+         * 특정 페이지의 코너 마커 위치를 업데이트합니다.
+         */
+        function updateCornerMarkers(page, verticalMm, horizontalMm) {
+            const tl = page.querySelector('.corner-marker.tl');
+            const tr = page.querySelector('.corner-marker.tr');
+            const bl = page.querySelector('.corner-marker.bl');
+            const br = page.querySelector('.corner-marker.br');
+            if(tl) { tl.style.top = `calc(${verticalMm}mm - 1px)`; tl.style.left = `calc(${horizontalMm}mm - 1px)`; }
+            if(tr) { tr.style.top = `calc(${verticalMm}mm - 1px)`; tr.style.right = `calc(${horizontalMm}mm - 1px)`; }
+            if(bl) { bl.style.bottom = `calc(${verticalMm}mm - 1px)`; bl.style.left = `calc(${horizontalMm}mm - 1px)`; }
+            if(br) { br.style.bottom = `calc(${verticalMm}mm - 1px)`; br.style.right = `calc(${horizontalMm}mm - 1px)`; }
+        }
+
+        /**
+         * 모든 A4 페이지에 지정된 여백(mm)을 적용하고,
+         * 페이지 경계 마커의 위치를 업데이트합니다.
+         */
+        function applyPadding(verticalMm, horizontalMm) {
+            const allPages = pageContainer.querySelectorAll('.a4-page');
+            allPages.forEach(page => {
+                page.style.paddingTop = `${verticalMm}mm`;
+                page.style.paddingBottom = `${verticalMm}mm`;
+                page.style.paddingLeft = `${horizontalMm}mm`;
+                page.style.paddingRight = `${horizontalMm}mm`;
+                updateCornerMarkers(page, verticalMm, horizontalMm); // 마커 업데이트 호출
+                 const editor = page.querySelector('.editor');
+                 const canvas = page.querySelector('.drawing-canvas');
+                 if (editor) updateLineMarkers(editor, page);
+                 if (canvas) resizeCanvas(canvas, page); // 여백 변경 시 캔버스 크기 재조정
+            });
+            if (selectedImage) {
+                updateResizeHandlePosition();
+            }
+        }
+
+        /**
+         * 모든 페이지에 현재 설정된 방향 클래스를 적용하고 마커 및 캔버스 크기를 업데이트합니다.
+         */
+        function applyPageOrientation() {
+            const allPages = pageContainer.querySelectorAll('.a4-page');
+            const verticalMm = verticalPaddingInput.value;
+            const horizontalMm = horizontalPaddingInput.value;
+
+            if (currentPageOrientation === 'landscape') {
+                document.body.classList.add('print-landscape');
+            } else {
+                document.body.classList.remove('print-landscape');
+            }
+
+            allPages.forEach(page => {
+                page.classList.remove('a4-portrait', 'a4-landscape');
+                page.classList.add(currentPageOrientation === 'portrait' ? 'a4-portrait' : 'a4-landscape');
+                updateCornerMarkers(page, verticalMm, horizontalMm); // 마커 업데이트
+                 const editor = page.querySelector('.editor');
+                 const canvas = page.querySelector('.drawing-canvas');
+                 if (editor) updateLineMarkers(editor, page); // 라인 마커 업데이트
+                 // 방향 전환 후 캔버스 크기 조정 (CSS 전환 시간 고려)
+                 setTimeout(() => {
+                      if(canvas) resizeCanvas(canvas, page); // resizeCanvas에서 내용 유지 처리
+                 }, 350); // 0.3초 전환 + 여유 시간
+            });
+
+            orientationText.textContent = currentPageOrientation === 'portrait' ? '세로' : '가로';
+            if (selectedImage) {
+                updateResizeHandlePosition();
+            }
+        }
+
+        /**
+         * 페이지 방향을 토글합니다.
+         */
+        function togglePageOrientation() {
+            currentPageOrientation = (currentPageOrientation === 'portrait') ? 'landscape' : 'portrait';
+            applyPageOrientation();
+             const activeEditor = document.activeElement.closest('.editor');
+             if (activeEditor) {
+                 checkOverflowAndCreatePage(activeEditor, activeEditor.closest('.a4-page'));
+             }
+        }
+
+        /**
+         * 페이지 ID를 순서대로 재설정합니다.
+         */
+        function reindexPageIds() {
+            const allPages = pageContainer.querySelectorAll('.a4-page');
+            allPages.forEach((page, index) => {
+                 const editor = page.querySelector('.editor');
+                 const canvas = page.querySelector('.drawing-canvas');
+                 if (editor) editor.id = `editor-${index + 1}`;
+                 if (canvas) canvas.id = `canvas-${index + 1}`; // 캔버스 ID도 설정
+            });
+            pageCount = allPages.length; // 페이지 카운트 업데이트
+            // console.log(`Reindexed pages. Current count: ${pageCount}`);
+        }
+
+        /**
+         * 새로운 A4 페이지를 생성하고 페이지 컨테이너에 추가합니다.
+         * @param {HTMLElement} [previousPage=null] - 새 페이지가 이 페이지 다음에 삽입됩니다.
+         * @returns {HTMLElement} 새로 생성된 에디터 요소
+         */
+        function createNewPage(previousPage = null) {
+            console.log(`Creating new page...`);
+            const newPageDiv = document.createElement('div');
+            newPageDiv.classList.add('a4-page', currentPageOrientation === 'portrait' ? 'a4-portrait' : 'a4-landscape');
+
+            // 코너 마커 추가
+            const markers = ['tl', 'tr', 'bl', 'br'];
+            markers.forEach(pos => {
+                const marker = document.createElement('div');
+                marker.classList.add('corner-marker', pos);
+                newPageDiv.appendChild(marker);
+            });
+
+            // 캔버스 추가
+            const newCanvas = document.createElement('canvas');
+            newCanvas.classList.add('drawing-canvas');
+            newPageDiv.appendChild(newCanvas); // 에디터보다 먼저 추가 (z-index 위해)
+
+            // 에디터 추가
+            const newEditorDiv = document.createElement('div');
+            newEditorDiv.setAttribute('contenteditable', 'true');
+            newEditorDiv.setAttribute('spellcheck', 'false');
+            newEditorDiv.classList.add('editor');
+            newPageDiv.appendChild(newEditorDiv);
+
+            // 페이지 삽입 및 ID 재설정
+            if (previousPage && previousPage.nextSibling) {
+                 pageContainer.insertBefore(newPageDiv, previousPage.nextSibling);
+            } else {
+                 pageContainer.appendChild(newPageDiv);
+            }
+            reindexPageIds(); // 페이지 추가 후 즉시 ID 재정렬
+
+            // 새 페이지 스타일 및 캔버스 설정
+            const currentVerticalPadding = verticalPaddingInput.value;
+            const currentHorizontalPadding = horizontalPaddingInput.value;
+            newPageDiv.style.paddingTop = `${currentVerticalPadding}mm`;
+            newPageDiv.style.paddingBottom = `${currentVerticalPadding}mm`;
+            newPageDiv.style.paddingLeft = `${currentHorizontalPadding}mm`;
+            newPageDiv.style.paddingRight = `${currentHorizontalPadding}mm`;
+            updateCornerMarkers(newPageDiv, currentVerticalPadding, currentHorizontalPadding);
+
+            // 캔버스 크기 설정 및 컨텍스트 저장 (setTimeout으로 DOM 반영 기다림)
+            setTimeout(() => {
+                 resizeCanvas(newCanvas, newPageDiv);
+                 const ctx = newCanvas.getContext('2d');
+                 canvasContexts.set(newCanvas.id, ctx); // Map에 컨텍스트 저장
+                 console.log(`Canvas context stored for ${newCanvas.id}`);
+                 updateLineMarkers(newEditorDiv, newPageDiv); // 새 페이지 마커 초기화
+                 addCanvasEventListeners(newCanvas); // 새 캔버스에 이벤트 리스너 추가
+            }, 10);
+
+
+            // 새 에디터에 포커스
+            setTimeout(() => {
+                newEditorDiv.focus();
+                updateToolbarState(); // 새 에디터 포커스 후 툴바 업데이트
+            }, 50); // 캔버스 설정 후 약간 더 지연
+
+            return newEditorDiv; // 새로 생성된 '에디터' 반환
+        }
+
+        /**
+         * 주어진 요소의 가장 끝으로 커서를 이동시킵니다.
+         */
+        function moveCursorToEndSync(element) {
+             if (!element) return;
+             element.focus();
+             try {
+                 const selection = window.getSelection();
+                 const range = document.createRange();
+                 if (element.hasChildNodes()) {
+                     range.selectNodeContents(element);
+                     range.collapse(false);
+                 } else {
+                     range.setStart(element, 0);
+                     range.collapse(true);
+                 }
+                 selection.removeAllRanges();
+                 selection.addRange(range);
+                 lastSelection = { editor: element, range: range.cloneRange() };
+             } catch(e) {
+                 console.error("Error setting cursor sync:", e);
+             }
+        }
+
+         /**
+         * 주어진 요소의 가장 처음으로 커서를 이동시킵니다.
+         * @param {HTMLElement} element - 커서를 이동할 요소
+         */
+        function moveCursorToStartSync(element) {
+            if (!element) return;
+            element.focus(); // 포커스 먼저
+            try {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                if (element.firstChild) {
+                    range.setStart(element.firstChild, 0);
+                } else {
+                    range.setStart(element, 0);
+                }
+                range.collapse(true); // 시작으로 접기
+                selection.removeAllRanges();
+                selection.addRange(range);
+                lastSelection = { editor: element, range: range.cloneRange() };
+            } catch (e) {
+                console.error("Error setting cursor to start sync:", e);
+            }
+        }
+
+
+        /**
+         * 사용자의 마지막 유효한 선택 영역(Selection)을 저장합니다.
+         */
+        function storeSelection(event) {
+            if (currentResizeHandle || isDrawingModeActive) return; // 리사이즈 또는 그리기 모드 중 저장 방지
+
+            if (event && event.target && event.target.closest('#main-toolbar')) {
+                return;
+            }
+
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const editor = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+                             ? range.commonAncestorContainer.closest('.editor')
+                             : range.commonAncestorContainer.parentElement.closest('.editor');
+
+                if (editor && editor.contains(range.commonAncestorContainer)) {
+                    if (range.startContainer.nodeType === Node.ELEMENT_NODE && range.startContainer.tagName === 'IMG') {
+                       return;
+                    }
+                     if (event && event.target && (event.target.tagName === 'IMG' || event.target.classList.contains('resize-handle'))) {
+                         return;
+                     }
+
+                    const clonedRange = range.cloneRange();
+                    try {
+                        lastSelection = { editor: editor, range: clonedRange };
+                    } catch (e) {
+                        console.error("Error cloning range:", e);
+                        lastSelection = { editor: null, range: null };
+                    }
+                }
+            }
+        }
+
+        /**
+         * 저장된 마지막 선택 영역에 텍스트 서식 명령(execCommand)을 적용합니다.
+         */
+        function formatText(command, value = null) {
+            if (lastSelection.editor && lastSelection.range) {
+                const editorToFocus = lastSelection.editor;
+                const rangeToApply = lastSelection.range.cloneRange(); // 복제본 사용
+                try {
+                    editorToFocus.focus(); // 포커스 복원
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(rangeToApply); // 저장된 range 복원
+
+                    if (selection.rangeCount > 0) {
+                        document.execCommand(command, false, value);
+
+                        // 명령 실행 후 변경된 selection을 다시 저장
+                        const newSelection = window.getSelection();
+                        if (newSelection.rangeCount > 0) {
+                           const newRange = newSelection.getRangeAt(0).cloneRange();
+                           if (editorToFocus.contains(newRange.commonAncestorContainer)) {
+                               lastSelection = { editor: editorToFocus, range: newRange };
+                           }
+                        }
+                         // 서식 변경 후 마커 및 툴바 상태 업데이트
+                         updateLineMarkers(editorToFocus, editorToFocus.closest('.a4-page'));
+                         updateToolbarState(); // 툴바 상태 업데이트 호출
+                    } else {
+                         console.warn("Failed to restore selection before executing command.");
+                    }
+                } catch (e) { console.error(`Error executing command ${command}:`, e); }
+            } else {
+                 console.warn("No valid stored selection found to apply format.");
+                 // alert("텍스트 서식을 적용할 위치를 먼저 클릭해주세요."); // 필요 시 활성화
+            }
+        }
+
+        // --- 이미지 리사이즈 핸들 관련 함수 ---
+        // (이전과 동일)
+        function hideResizeHandle() { document.querySelectorAll('.resize-handle').forEach(h => h.remove()); if (selectedImage) { selectedImage.classList.remove('selected'); selectedImage = null; } }
+        function updateResizeHandlePosition() { /* 이전과 동일 */ const handle = document.querySelector('.resize-handle'); if (!selectedImage || !handle || !handle.parentNode) return; const page = selectedImage.closest('.a4-page'); if (!page) return; const imgRect = selectedImage.getBoundingClientRect(); const pageRect = page.getBoundingClientRect(); const handleTop = imgRect.bottom - pageRect.top + page.scrollTop - (handle.offsetHeight / 2); const handleLeft = imgRect.right - pageRect.left + page.scrollLeft - (handle.offsetWidth / 2); handle.style.position = 'absolute'; handle.style.top = `${handleTop}px`; handle.style.left = `${handleLeft}px`; }
+        function showResizeHandle(imgElement) { hideResizeHandle(); selectedImage = imgElement; selectedImage.classList.add('selected'); const handle = document.createElement('div'); handle.classList.add('resize-handle'); const page = selectedImage.closest('.a4-page'); if (!page) return; page.appendChild(handle); updateResizeHandlePosition(); handle.addEventListener('mousedown', onHandleMouseDown); }
+        function onHandleMouseDown(event) { event.preventDefault(); event.stopPropagation(); currentResizeHandle = event.target; if (!selectedImage) return; startX = event.clientX; startWidth = selectedImage.offsetWidth; document.addEventListener('mousemove', onHandleMouseMove); document.addEventListener('mouseup', onHandleMouseUp); }
+        function onHandleMouseMove(event) { if (!selectedImage || !currentResizeHandle) return; const deltaX = event.clientX - startX; let newWidth = startWidth + deltaX; newWidth = Math.max(20, newWidth); const editor = selectedImage.closest('.editor'); const page = selectedImage.closest('.a4-page'); let editorWidth = 500; if (editor && page) { const pageStyle = window.getComputedStyle(page); const paddingLeft = parseFloat(pageStyle.paddingLeft); const paddingRight = parseFloat(pageStyle.paddingRight); editorWidth = page.clientWidth - paddingLeft - paddingRight; } const maxWidth = editorWidth * 0.95; newWidth = Math.min(newWidth, maxWidth); selectedImage.style.width = `${newWidth}px`; selectedImage.style.maxWidth = `${newWidth}px`; updateResizeHandlePosition(); }
+        function onHandleMouseUp() { if (!currentResizeHandle) return; document.removeEventListener('mousemove', onHandleMouseMove); document.removeEventListener('mouseup', onHandleMouseUp); currentResizeHandle = null; updateResizeHandlePosition(); }
+
+
+        /**
+         * 해당 페이지의 라인 마커를 업데이트합니다.
+         */
+        function updateLineMarkers(editor, page) {
+            if (!editor || !page) return;
+            page.querySelectorAll('.line-marker').forEach(marker => marker.remove());
+            const pagePaddingTop = parseFloat(window.getComputedStyle(page).paddingTop);
+            const editorRect = editor.getBoundingClientRect();
+            const pageRect = page.getBoundingClientRect();
+            const editorOffsetTopInPage = editorRect.top - pageRect.top;
+
+            const children = Array.from(editor.childNodes);
+            let blockElements = [];
+            children.forEach(child => {
+                 if (child.nodeType === Node.ELEMENT_NODE && (window.getComputedStyle(child).display.includes('block') || ['IMG', 'BR', 'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'PRE'].includes(child.tagName))) {
+                    blockElements.push(child);
+                 } else if (child.nodeType === Node.TEXT_NODE && child.textContent.trim() !== '') {
+                     if (blockElements.length === 0) {
+                         blockElements.push(editor);
+                     }
+                 }
+            });
+
+            if (blockElements.length === 0 && editor.hasChildNodes()) {
+                 blockElements.push(editor);
+            }
+            if (!editor.hasChildNodes()) {
+                 blockElements.push(editor);
+            }
+
+            blockElements.forEach(el => {
+                if (!el || typeof el.offsetTop === 'undefined') return;
+                const marker = document.createElement('div');
+                marker.classList.add('line-marker');
+                let markerTop = el.offsetTop + editorOffsetTopInPage;
+                if (el === editor) markerTop = editorOffsetTopInPage;
+                marker.style.top = `${markerTop}px`;
+                page.appendChild(marker);
+            });
+        }
+
+
+        /**
+         * 페이지 내용 넘침 확인 및 처리 (내용 변경 후)
+         */
+        function checkOverflowAndCreatePage(editor, page) {
+             // requestAnimationFrame을 사용하여 DOM 업데이트 후 높이 측정
+             requestAnimationFrame(() => {
+                 if (!editor || !page) return;
+
+                 const pageStyle = window.getComputedStyle(page);
+                 const paddingTop = parseFloat(pageStyle.paddingTop);
+                 const paddingBottom = parseFloat(pageStyle.paddingBottom);
+                 const availableHeight = page.clientHeight - paddingTop - paddingBottom;
+                 const contentHeight = editor.scrollHeight;
+                 const tolerance = 20; // 오차 허용 범위 증가
+
+                 console.log(`[Overflow Check] Editor: ${editor.id}, Content Height: ${contentHeight.toFixed(2)}, Available Height: ${availableHeight.toFixed(2)}`);
+
+                 if (contentHeight > availableHeight + tolerance) {
+                     console.log(">>> Overflow detected! Creating new page.");
+
+                     if (page.nextElementSibling && page.nextElementSibling.classList.contains('a4-page')) {
+                         console.log(">>> Next page already exists. Skipping creation.");
+                         return;
+                     }
+
+                     const newEditor = createNewPage(page);
+                     if (!newEditor) return;
+                     console.log(`>>> New page created with editor ID: ${newEditor.id}`);
+
+                     const fragment = document.createDocumentFragment();
+                     let movedContent = false;
+                     while (editor.scrollHeight > availableHeight + tolerance && editor.lastChild) {
+                         const nodeToMove = editor.lastChild;
+                         fragment.insertBefore(nodeToMove, fragment.firstChild);
+                         movedContent = true;
+                         console.log(">>> Moving node to fragment:", nodeToMove);
+                     }
+
+                     if (movedContent) {
+                         newEditor.appendChild(fragment);
+                         moveCursorToStartSync(newEditor);
+                         console.log(">>> Successfully moved overflowing content.");
+                         updateLineMarkers(editor, page);
+                         updateLineMarkers(newEditor, newEditor.closest('.a4-page'));
+                     } else {
+                         console.warn(">>> No content nodes were moved, but overflow was detected.");
+                         moveCursorToStartSync(newEditor);
+                         updateLineMarkers(editor, page);
+                         updateLineMarkers(newEditor, newEditor.closest('.a4-page'));
+                     }
+
+                     while (editor.lastChild && (editor.lastChild.nodeType === Node.TEXT_NODE && editor.lastChild.textContent.trim() === '' || editor.lastChild.tagName === 'BR')) {
+                         editor.removeChild(editor.lastChild);
+                     }
+                     updateLineMarkers(editor, page);
+
+                 } else {
+                      console.log("[Overflow Check] No overflow detected.");
+                 }
+             });
+        }
+
+        /**
+         * RGB 색상 문자열을 Hex 코드로 변환합니다.
+         */
+        function rgbToHex(rgb) {
+            if (!rgb || typeof rgb !== 'string') return null;
+            const rgbMatch = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!rgbMatch) return null;
+            function componentToHex(c) { const hex = c.toString(16); return hex.length == 1 ? "0" + hex : hex; }
+            const r = parseInt(rgbMatch[1], 10); const g = parseInt(rgbMatch[2], 10); const b = parseInt(rgbMatch[3], 10);
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+
+        /**
+         * 현재 커서/선택 영역의 상태에 따라 툴바 버튼 UI를 업데이트합니다.
+         */
+        function updateToolbarState() {
+            // 그리기 모드 활성화 시 텍스트 서식 툴바 업데이트 중지
+            if (isDrawingModeActive) return;
+
+            const commands = ['bold', 'italic', 'underline', 'strikeThrough', 'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'];
+            commands.forEach(command => {
+                const button = toolbarContent.querySelector(`button[data-command="${command}"]`);
+                if (button) {
+                    try {
+                        const isActive = document.queryCommandState(command);
+                        button.classList.toggle('bg-blue-100', isActive);
+                        button.classList.toggle('border-blue-300', isActive);
+                    } catch (e) { button.classList.remove('bg-blue-100', 'border-blue-300'); }
+                }
+            });
+
+            // 글꼴 크기 업데이트
+            try {
+                const fontSizeValue = document.queryCommandValue('fontSize');
+                if (fontSizeValue && fontSizeSelect.querySelector(`option[value="${fontSizeValue}"]`)) {
+                    fontSizeSelect.value = fontSizeValue;
+                } else { fontSizeSelect.value = '3'; }
+            } catch (e) { fontSizeSelect.value = '3'; }
+
+            // 글꼴 업데이트 (불안정할 수 있음)
+             try {
+                 let fontName = document.queryCommandValue('fontName');
+                 if (fontName) {
+                     fontName = fontName.replace(/['"]/g, '');
+                     const matchingOption = Array.from(fontFamilySelect.options).find(opt => opt.value.toLowerCase() === fontName.toLowerCase());
+                     if (matchingOption) { fontFamilySelect.value = matchingOption.value; }
+                 }
+             } catch (e) { /* console.error("Error getting font name:", e); */ }
+
+
+            // 글자 색 업데이트
+            try {
+                const foreColorValue = document.queryCommandValue('foreColor');
+                const hexColor = rgbToHex(foreColorValue);
+                // console.log("Current color:", foreColorValue, "Converted Hex:", hexColor);
+                toolbarContent.querySelectorAll('.color-swatch[data-command="foreColor"]').forEach(swatch => {
+                    const swatchHex = swatch.dataset.value.toLowerCase();
+                    const isActive = hexColor === swatchHex;
+                    swatch.classList.toggle('ring-2', isActive);
+                    swatch.classList.toggle('ring-offset-1', isActive);
+                    swatch.classList.toggle('ring-blue-500', isActive);
+                });
+            } catch (e) {
+                 // console.error("Error getting foreColor:", e);
+                 toolbarContent.querySelectorAll('.color-swatch[data-command="foreColor"]').forEach(swatch => {
+                     swatch.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-500');
+                 });
+            }
+        }
+
+        // --- 그리기 모드 토글 ---
+        function toggleDrawingMode() {
+            isDrawingModeActive = !isDrawingModeActive;
+            console.log("Drawing mode toggled:", isDrawingModeActive);
+
+            // body 클래스 토글 (캔버스 커서 및 에디터 비활성화 제어)
+            document.body.classList.toggle('drawing-active', isDrawingModeActive);
+
+            // 그리기 버튼 활성 상태 토글
+            toggleDrawBtn.classList.toggle('active', isDrawingModeActive); // active 클래스 사용 (CSS 필요)
+            toggleDrawBtn.classList.toggle('bg-blue-100', isDrawingModeActive);
+            toggleDrawBtn.classList.toggle('border-blue-300', isDrawingModeActive);
+
+
+            // 그리기 도구 모음 표시/숨김
+            drawingToolbar.classList.toggle('hidden', !isDrawingModeActive);
+            drawingToolbar.classList.toggle('inline-flex', isDrawingModeActive); // flex 대신 inline-flex 사용
+
+            if (!isDrawingModeActive) {
+                // 그리기 모드 비활성화 시 지우개 모드도 해제
+                isErasing = false;
+                document.body.classList.remove('eraser-active');
+                eraserBtn.classList.remove('active', 'bg-blue-100', 'border-blue-300');
+                 // 미리보기 캔버스 제거 (혹시 남아있다면)
+                 if (previewCanvas) {
+                     previewCanvas.remove();
+                     previewCanvas = null;
+                     previewCtx = null;
+                 }
+            } else {
+                 // 그리기 모드 활성화 시, 기본 도구를 펜으로 설정 (선택적)
+                 setActiveDrawingTool('pen');
+            }
+             // 툴바 상태 업데이트 (텍스트 서식 버튼 비활성화 등)
+             updateToolbarState();
+        }
+
+        // --- 활성 그리기 도구 설정 및 UI 업데이트 ---
+        function setActiveDrawingTool(toolName) {
+            currentDrawingTool = toolName;
+            isErasing = (toolName === 'eraser');
+            document.body.classList.toggle('eraser-active', isErasing);
+
+            // 모든 도구 버튼 비활성화
+            drawingToolbar.querySelectorAll('.drawing-tool-btn').forEach(btn => {
+                 btn.classList.remove('active', 'bg-blue-100', 'border-blue-300');
+            });
+            // 현재 선택된 도구 버튼 활성화
+            const activeButton = drawingToolbar.querySelector(`.drawing-tool-btn[data-tool="${toolName}"]`);
+            if (activeButton) {
+                 activeButton.classList.add('active', 'bg-blue-100', 'border-blue-300');
+            }
+            console.log("Active drawing tool:", currentDrawingTool);
+        }
+
+        // --- 그리기 도구 이벤트 처리 ---
+        penThicknessSlider.addEventListener('input', (e) => {
+            currentPenThickness = e.target.value;
+            penThicknessValueSpan.textContent = currentPenThickness;
+            // 굵기 변경 시 펜 도구로 자동 변경 안 함 (사용자가 선택한 도구 유지)
+            // setActiveDrawingTool('pen');
+        });
+
+        penColorPicker.addEventListener('input', (e) => {
+            currentPenColor = e.target.value;
+            setActiveDrawingTool('pen'); // 색상 변경 시 펜 도구로
+        });
+
+        drawingToolbar.addEventListener('click', (e) => {
+            // 색상 견본 클릭
+            const colorSwatch = e.target.closest('button[data-canvas-command="penColor"]');
+            if (colorSwatch) {
+                currentPenColor = colorSwatch.dataset.value;
+                penColorPicker.value = currentPenColor; // 색상 피커에도 반영
+                setActiveDrawingTool('pen'); // 색상 변경 시 펜 도구로
+                return; // 다른 버튼 로직 실행 방지
+            }
+
+            // 도구 버튼 클릭 (펜, 사각형, 원, 삼각형, 지우개)
+            const toolButton = e.target.closest('.drawing-tool-btn[data-tool]');
+            if (toolButton) {
+                const tool = toolButton.dataset.tool;
+                setActiveDrawingTool(tool);
+                return; // 다른 버튼 로직 실행 방지
+            }
+
+             // 모두 지우기 버튼 클릭
+             if (e.target.closest('#clearCanvasBtn')) {
+                 // 현재 활성화된 에디터 또는 마지막 선택 영역 기준으로 캔버스 찾기
+                 let targetEditor = lastSelection.editor || document.activeElement.closest('.editor');
+                 if (!targetEditor) {
+                     alert("그림을 지울 페이지를 선택해주세요.");
+                     return;
+                 }
+                 const targetPage = targetEditor.closest('.a4-page');
+                 const targetCanvas = targetPage?.querySelector('.drawing-canvas');
+                 if (targetCanvas && confirm("현재 페이지의 모든 그림을 지우시겠습니까?")) {
+                      const ctx = canvasContexts.get(targetCanvas.id);
+                      if (ctx) {
+                          ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+                          console.log(`Canvas ${targetCanvas.id} cleared.`);
+                      }
+                 }
+             }
+        });
+
+
+        // --- 캔버스 그리기 이벤트 핸들러 ---
+        function startDrawing(e) {
+            if (!isDrawingModeActive) return;
+            currentDrawingCanvas = e.target; // 현재 사용 중인 캔버스 저장
+            const ctx = canvasContexts.get(currentDrawingCanvas.id);
+            if (!ctx) return;
+
+            isPainting = true;
+            startDrawX = e.offsetX; // 도형 시작점 기록
+            startDrawY = e.offsetY;
+            lastX = e.offsetX; // 자유선 시작점 기록
+            lastY = e.offsetY;
+
+            // 도형 도구일 경우 미리보기 캔버스 생성
+            if (['rectangle', 'circle', 'triangle'].includes(currentDrawingTool)) {
+                const page = currentDrawingCanvas.closest('.a4-page');
+                previewCanvas = document.createElement('canvas');
+                previewCanvas.classList.add('preview-canvas');
+                previewCanvas.width = currentDrawingCanvas.width;
+                previewCanvas.height = currentDrawingCanvas.height;
+                page.appendChild(previewCanvas); // 페이지에 추가
+                previewCtx = previewCanvas.getContext('2d');
+                console.log("Preview canvas created");
+            }
+
+            // 공통 스타일 설정
+            ctx.lineWidth = currentPenThickness;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // 도구별 설정
+            if (isErasing || currentDrawingTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+            } else {
+                ctx.globalCompositeOperation = 'source-over'; // 일반 그리기 모드
+                ctx.strokeStyle = currentPenColor;
+                if (currentDrawingTool === 'pen') {
+                    ctx.beginPath(); // 펜일 때만 즉시 경로 시작
+                    ctx.moveTo(lastX, lastY);
+                }
+            }
+        }
+
+        function draw(e) {
+            if (!isPainting || !isDrawingModeActive) return;
+            if (!currentDrawingCanvas) return; // 현재 캔버스 없으면 종료
+            const ctx = canvasContexts.get(currentDrawingCanvas.id);
+            if (!ctx) return;
+
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
+
+            // 펜 또는 지우개일 때만 실시간으로 그림
+            if (currentDrawingTool === 'pen' || currentDrawingTool === 'eraser') {
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+                [lastX, lastY] = [currentX, currentY];
+            }
+            // 도형 도구일 경우 미리보기 업데이트
+            else if (previewCtx) {
+                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height); // 이전 미리보기 지우기
+                 previewCtx.lineWidth = 1; // 미리보기는 얇게
+                 previewCtx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; // 미리보기 색상
+                 previewCtx.setLineDash([4, 4]); // 점선으로 표시
+
+                 if (currentDrawingTool === 'rectangle') {
+                     previewCtx.strokeRect(startDrawX, startDrawY, currentX - startDrawX, currentY - startDrawY);
+                 } else if (currentDrawingTool === 'circle') {
+                     const width = Math.abs(currentX - startDrawX);
+                     const height = Math.abs(currentY - startDrawY);
+                     const radius = Math.min(width, height) / 2;
+                     const centerX = startDrawX + (currentX > startDrawX ? width / 2 : -width / 2);
+                     const centerY = startDrawY + (currentY > startDrawY ? height / 2 : -height / 2);
+                     if (radius > 0) {
+                         previewCtx.beginPath();
+                         previewCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                         previewCtx.stroke();
+                     }
+                 } else if (currentDrawingTool === 'triangle') {
+                    const width = currentX - startDrawX;
+                     previewCtx.beginPath();
+                     previewCtx.moveTo(startDrawX + width / 2, startDrawY); // Top center
+                     previewCtx.lineTo(startDrawX, currentY); // Bottom left
+                     previewCtx.lineTo(currentX, currentY); // Bottom right
+                     previewCtx.closePath();
+                     previewCtx.stroke();
+                 }
+                 previewCtx.setLineDash([]); // 점선 해제
+            }
+        }
+
+        function stopDrawing(e) {
+            if (!isPainting) return;
+            isPainting = false;
+            if (!currentDrawingCanvas) return; // 현재 캔버스 없으면 종료
+            const ctx = canvasContexts.get(currentDrawingCanvas.id);
+            if (!ctx) return;
+
+            const endX = e.offsetX;
+            const endY = e.offsetY;
+
+            // 미리보기 캔버스 제거 및 컨텍스트 초기화
+            if (previewCanvas) {
+                previewCanvas.remove();
+                previewCanvas = null;
+                previewCtx = null;
+                console.log("Preview canvas removed");
+            }
+
+            // 현재 설정된 스타일 적용 (최종 도형용)
+            ctx.lineWidth = currentPenThickness;
+            ctx.strokeStyle = currentPenColor;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([]); // 실선으로
+            // 지우개 모드가 아니면 source-over 확인
+            if (!isErasing) {
+                 ctx.globalCompositeOperation = 'source-over';
+            } else {
+                 // 지우개 모드였다면, stop 시에는 일반 모드로 돌릴 필요 없음 (startDrawing에서 다시 설정됨)
+                 // ctx.globalCompositeOperation = 'source-over';
+            }
+
+            // 도형 그리기
+            if (currentDrawingTool === 'rectangle') {
+                ctx.strokeRect(startDrawX, startDrawY, endX - startDrawX, endY - startDrawY);
+                 console.log("Rectangle drawn");
+            } else if (currentDrawingTool === 'circle') {
+                const width = Math.abs(endX - startDrawX);
+                const height = Math.abs(endY - startDrawY);
+                const radius = Math.min(width, height) / 2;
+                const centerX = startDrawX + (endX > startDrawX ? width / 2 : -width / 2);
+                const centerY = startDrawY + (endY > startDrawY ? height / 2 : -height / 2);
+                if (radius > 0) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    console.log("Circle drawn");
+                }
+            } else if (currentDrawingTool === 'triangle') {
+                const width = endX - startDrawX;
+                ctx.beginPath();
+                ctx.moveTo(startDrawX + width / 2, startDrawY); // Top center
+                ctx.lineTo(startDrawX, endY); // Bottom left
+                ctx.lineTo(endX, endY); // Bottom right
+                ctx.closePath();
+                ctx.stroke();
+                 console.log("Triangle drawn");
+            }
+            // 펜/지우개는 mousemove에서 이미 그려짐
+            currentDrawingCanvas = null; // 현재 캔버스 참조 해제
+        }
+
+        // 모든 캔버스에 이벤트 리스너 추가하는 함수
+        function addCanvasEventListeners(canvas) {
+             canvas.addEventListener('mousedown', startDrawing);
+             canvas.addEventListener('mousemove', draw);
+             canvas.addEventListener('mouseup', stopDrawing);
+             canvas.addEventListener('mouseleave', stopDrawing); // 캔버스 벗어나면 그리기 중지
+        }
+
+
+        // --- 이벤트 리스너 설정 ---
+        verticalPaddingInput.addEventListener('input', () => applyPadding(verticalPaddingInput.value, horizontalPaddingInput.value));
+        horizontalPaddingInput.addEventListener('input', () => applyPadding(verticalPaddingInput.value, horizontalPaddingInput.value));
+        colorPicker.addEventListener('input', (e) => formatText('foreColor', e.target.value));
+        fontSizeSelect.addEventListener('change', (e) => formatText('fontSize', e.target.value));
+        fontFamilySelect.addEventListener('change', (e) => formatText('fontName', e.target.value));
+        printBtn.addEventListener('click', () => { console.log('Print button clicked'); window.print(); });
+        toggleOrientationBtn.addEventListener('click', togglePageOrientation); // 방향 전환 버튼 리스너
+        toggleDrawBtn.addEventListener('click', toggleDrawingMode); // 그리기 버튼 리스너 추가
+
+        // Undo/Redo Button Event Listeners
+        undoBtn.addEventListener('click', () => document.execCommand('undo', false, null));
+        redoBtn.addEventListener('click', () => document.execCommand('redo', false, null));
+
+
+        // 이미지 삽입 버튼 리스너
+        insertImageBtn.addEventListener('click', () => {
+             let targetEditor = lastSelection.editor;
+             let targetRange = lastSelection.range ? lastSelection.range.cloneRange() : null;
+
+              if (!targetEditor || !targetRange) {
+                  const activeEditor = document.activeElement.closest('.editor');
+                  if (activeEditor) {
+                      targetEditor = activeEditor;
+                      targetEditor.focus();
+                      const selection = window.getSelection();
+                      if (selection.rangeCount > 0) {
+                          targetRange = selection.getRangeAt(0).cloneRange();
+                      } else {
+                          targetRange = document.createRange();
+                          targetRange.selectNodeContents(targetEditor);
+                          targetRange.collapse(false);
+                      }
+                  } else {
+                      alert("이미지를 삽입할 위치를 에디터 내부에서 클릭하거나 커서를 위치시켜 주세요.");
+                      return;
+                  }
+              }
+
+            const fileInputHandler = (event) => {
+                if (event.target.files && event.target.files[0]) {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        try {
+                            targetEditor.focus();
+                            const selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(targetRange);
+
+                            if (selection.rangeCount > 0) {
+                                document.execCommand('insertHTML', false, `<img src="${dataUrl}" alt="Uploaded Image" style="max-width: 50%; height: auto; float: left; margin: 0.25rem 0.75rem 0.25rem 0; border-radius: 0.375rem; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); cursor: pointer;">`);
+
+                                const insertedImage = targetEditor.querySelector(`img[src="${dataUrl}"]`);
+                                if (insertedImage) {
+                                    const newRange = document.createRange();
+                                    newRange.setStartAfter(insertedImage);
+                                    newRange.collapse(true);
+                                    selection.removeAllRanges();
+                                    selection.addRange(newRange);
+                                    lastSelection = { editor: targetEditor, range: newRange.cloneRange() };
+
+                                    // 이미지 삽입 후 마커 업데이트 및 오버플로우 체크
+                                     setTimeout(() => {
+                                         const page = targetEditor.closest('.a4-page');
+                                         updateLineMarkers(targetEditor, page);
+                                         checkOverflowAndCreatePage(targetEditor, page);
+                                         updateToolbarState(); // 툴바 상태 업데이트
+                                     }, 100);
+                                }
+                            } else {
+                                console.error("Failed to restore selection before inserting image.");
+                                alert("이미지 삽입 위치를 설정하는데 실패했습니다.");
+                            }
+                        } catch (err) {
+                            console.error("Error executing insertHTML command for image:", err);
+                            alert("이미지 삽입 중 오류가 발생했습니다.");
+                        } finally {
+                           event.target.value = null;
+                        }
+                    };
+                    reader.onerror = (error) => {
+                         console.error("File reading error:", error);
+                         alert("파일을 읽는 중 오류가 발생했습니다.");
+                         event.target.value = null;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            imageUpload.onchange = fileInputHandler;
+            imageUpload.click();
+        });
+
+
+        // 툴바 버튼 클릭 위임 (서식 적용)
+        toolbarContent.addEventListener('click', function(event) {
+             const button = event.target.closest('button[data-command]');
+             if (button) {
+                 const command = button.dataset.command;
+                 const value = button.dataset.value || null;
+                 if (command === 'foreColor' && button.classList.contains('color-swatch') && event.shiftKey) {
+                     const colorToSave = colorPicker.value;
+                     button.dataset.value = colorToSave;
+                     button.style.backgroundColor = colorToSave;
+                     button.title = colorToSave;
+                     console.log(`Color ${colorToSave} saved to swatch.`);
+                 } else {
+                     formatText(command, value); // Use lastSelection
+                     // formatText 내부에서 updateToolbarState 호출됨
+                 }
+             }
+        });
+
+        // 에디터 영역 클릭/포커스 이벤트 리스너 (이미지 선택/해제 및 selection/toolbar 업데이트)
+        pageContainer.addEventListener('click', function(event) {
+            const target = event.target;
+             // 그리기 모드 활성화 시 에디터 클릭 무시 (캔버스 이벤트가 처리)
+             if (isDrawingModeActive && event.target.closest('.editor')) {
+                  return;
+             }
+
+            if (target.tagName === 'IMG' && target.closest('.editor')) {
+                showResizeHandle(target);
+                event.stopPropagation();
+            } else if (target.classList.contains('resize-handle')) {
+                event.stopPropagation();
+            } else if (selectedImage && !target.closest('.resize-handle')) {
+                 hideResizeHandle();
+            }
+            storeSelection(event); // 클릭 시 selection 저장
+            updateToolbarState(); // 클릭 시 툴바 상태 업데이트
+        });
+
+        // 텍스트 selection 변경 시 저장 및 툴바 업데이트
+        document.addEventListener('selectionchange', () => {
+             // 그리기 모드 활성화 시 selection 변경 무시
+             if (isDrawingModeActive) return;
+
+             const activeElement = document.activeElement;
+             if (activeElement && activeElement.closest('.editor')) {
+                 storeSelection(); // selection 저장
+                 updateToolbarState(); // 툴바 상태 업데이트
+             }
+        });
+        // 키보드 입력 후 selection 저장 및 툴바 업데이트
+        pageContainer.addEventListener('keyup', (event) => {
+             // 그리기 모드 활성화 시 키 입력 무시 (선택적)
+             if (isDrawingModeActive) return;
+
+             storeSelection(event); // 키 입력 후 selection 저장
+             updateToolbarState(); // 툴바 상태 업데이트
+        });
+
+        // 내용 변경 시 오버플로우 체크 및 마커 업데이트 (input 이벤트 사용)
+        pageContainer.addEventListener('input', (event) => {
+             if (isProcessingBackspace || isDrawingModeActive) return; // Backspace 또는 그리기 처리 중이면 건너뛰기
+            const editor = event.target.closest('.editor');
+            if (editor) {
+                const page = editor.closest('.a4-page');
+                updateLineMarkers(editor, page); // 내용 변경 시 마커 업데이트
+                checkOverflowAndCreatePage(editor, page); // 오버플로우 체크
+                 // 입력 중에도 툴바 상태 업데이트 (선택 사항, 필요 시)
+                 // updateToolbarState();
+            }
+        });
+
+        // 포커스 아웃 시 저장
+        pageContainer.addEventListener('focusout', (event) => {
+            if (event.target.closest('.editor')) {
+                storeSelection(event);
+            } else {
+                hideResizeHandle(); // 에디터 외부 클릭 시 이미지 선택 해제
+            }
+             // 포커스 아웃 시에도 툴바 상태 업데이트 (선택 사항)
+             // updateToolbarState();
+        });
+
+
+        // 키 입력 처리 (Backspace, Delete 만 처리)
+        pageContainer.addEventListener('keydown', function(event) {
+            // 그리기 모드 활성화 시 키 입력 무시 (선택적)
+            if (isDrawingModeActive) return;
+
+            if (!event.target.closest('.editor')) return;
+            const currentEditor = event.target.closest('.editor');
+            const currentPage = currentEditor.closest('.a4-page');
+
+            // 이미지 선택된 상태에서 Delete 또는 Backspace
+            if (selectedImage && (event.key === 'Delete' || event.key === 'Backspace')) {
+                event.preventDefault();
+                const imageToRemove = selectedImage;
+                const editorToFocus = imageToRemove.closest('.editor'); // 포커스할 에디터 저장
+                hideResizeHandle(); // 핸들 먼저 제거
+                imageToRemove.remove(); // 이미지 삭제
+                console.log("Selected image removed.");
+                if (editorToFocus) {
+                    editorToFocus.focus(); // 이미지 삭제 후 에디터에 포커스
+                     updateLineMarkers(editorToFocus, editorToFocus.closest('.a4-page')); // 마커 업데이트
+                     updateToolbarState(); // 툴바 상태 업데이트
+                }
+                return; // 이미지 삭제 후 다른 키 동작 방지
+            }
+
+            // Enter 키 관련 로직은 input 이벤트 리스너에서 처리하므로 제거
+
+            // Backspace 키 처리 (페이지 병합)
+            else if (event.key === 'Backspace') {
+                // *** Backspace 시작 시 플래그 설정 ***
+                isProcessingBackspace = true;
+
+                if (currentEditor.id === 'editor-1') {
+                    // 첫 페이지에서는 병합 안 함, 플래그만 해제하고 마커/툴바 업데이트
+                    setTimeout(() => { isProcessingBackspace = false; updateLineMarkers(currentEditor, currentPage); updateToolbarState(); }, 0);
+                    return;
+                }
+
+                const selection = window.getSelection();
+                if (selection.isCollapsed && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+
+                    // *** 수정된 isCursorAtTrueStart 로직 ***
+                    let isCursorAtTrueStart = false;
+                    if (range.startOffset === 0) {
+                        if (range.startContainer === currentEditor) {
+                            isCursorAtTrueStart = true; // 에디터 자체의 시작
+                        } else if (range.startContainer === currentEditor.firstChild) {
+                             isCursorAtTrueStart = true; // 첫번째 자식 노드의 시작
+                        } else if (currentEditor.firstChild && range.startContainer.nodeType === Node.TEXT_NODE && range.startContainer.parentNode === currentEditor.firstChild) {
+                             // 첫번째 자식 노드(예: P) 안의 텍스트 노드의 시작
+                             isCursorAtTrueStart = true;
+                        } else if (currentEditor.firstChild && range.startContainer.nodeType === Node.ELEMENT_NODE && range.startContainer.tagName === 'BR' && range.startContainer.parentNode === currentEditor.firstChild) {
+                             // 첫번째 자식 노드(예: P) 안의 BR 태그 시작 (빈 줄)
+                             isCursorAtTrueStart = true;
+                        }
+                         // 추가: 에디터가 비어있거나, 첫번째 자식이 빈 P/DIV 인 경우도 시작으로 간주
+                         else if (!currentEditor.textContent.trim()) {
+                             isCursorAtTrueStart = true;
+                         } else if (currentEditor.firstChild && currentEditor.firstChild.nodeType === Node.ELEMENT_NODE && ['P', 'DIV'].includes(currentEditor.firstChild.tagName) && !currentEditor.firstChild.textContent.trim()) {
+                             // 첫번째 자식이 비어있는 블록 요소일 때, 그 안의 시작점
+                             if (range.startContainer === currentEditor.firstChild || (range.startContainer.parentNode === currentEditor.firstChild && range.startOffset === 0)) {
+                                 isCursorAtTrueStart = true;
+                             }
+                         }
+                    }
+
+                     console.log(`[Backspace Check] Cursor at start? Offset=${range.startOffset}, Container=${range.startContainer.nodeName}, Result=${isCursorAtTrueStart}`);
+                    // *** 수정된 로직 끝 ***
+
+
+                    if (isCursorAtTrueStart) {
+                        // *** 조건부 페이지 병합 로직 ***
+                        const markerCount = currentPage.querySelectorAll('.line-marker').length;
+                        const isEmpty = !currentEditor.textContent.trim();
+                        console.log(`[Merge Check] Marker count: ${markerCount}, Is empty: ${isEmpty}`);
+
+                        // 조건: 마커가 1개 이하이고 내용이 비었을 때만 페이지 병합
+                        if (markerCount <= 1 && isEmpty) {
+                            event.preventDefault(); // 기본 Backspace 동작 방지
+                            console.log(">>> Conditions met for page merge.");
+
+                            const currentPageNumber = parseInt(currentEditor.id.split('-')[1]);
+                            const previousEditorId = `editor-${currentPageNumber - 1}`;
+                            const previousEditor = document.getElementById(previousEditorId);
+                            const previousPage = previousEditor ? previousEditor.closest('.a4-page') : null; // 이전 페이지 요소 찾기
+
+                            if (previousEditor && previousPage) { // 이전 페이지와 에디터가 모두 존재해야 함
+                                const lastNodeBeforeMerge = previousEditor.lastChild; // 병합 전 마지막 노드 기억
+
+                                // 현재 에디터의 내용을 이전 에디터 끝으로 이동 (내용이 거의 없을 것이지만 혹시 모르니)
+                                const currentContentFragment = document.createDocumentFragment();
+                                while (currentEditor.firstChild) {
+                                    currentContentFragment.appendChild(currentEditor.firstChild);
+                                }
+                                if (currentContentFragment.hasChildNodes()) {
+                                    previousEditor.appendChild(currentContentFragment);
+                                }
+
+                                // 커서 위치 조정 (마지막 노드 끝으로)
+                                previousEditor.focus();
+                                const selectionMerge = window.getSelection();
+                                const rangeMerge = document.createRange();
+                                try {
+                                    if (lastNodeBeforeMerge) {
+                                        rangeMerge.selectNodeContents(lastNodeBeforeMerge);
+                                        rangeMerge.collapse(false); // 끝으로 접기
+                                    } else {
+                                        rangeMerge.setStart(previousEditor, 0);
+                                        rangeMerge.collapse(true);
+                                    }
+                                    selectionMerge.removeAllRanges();
+                                    selectionMerge.addRange(rangeMerge);
+                                    console.log("Cursor positioned at the end of previous content.");
+                                } catch(e) {
+                                    console.warn("Failed to set cursor at end of last node, moving to end.", e);
+                                    moveCursorToEndSync(previousEditor); // 전체 내용의 끝으로
+                                }
+
+                                lastSelection = { editor: previousEditor, range: rangeMerge.cloneRange() }; // lastSelection 업데이트
+
+                                // 현재 페이지(DOM 요소) 제거
+                                currentPage.remove();
+                                reindexPageIds(); // 페이지 제거 후 ID 재정렬 및 pageCount 업데이트
+                                updateLineMarkers(previousEditor, previousPage); // 이전 페이지 마커 업데이트
+                                updateToolbarState(); // 툴바 상태 업데이트
+
+                                console.log(`Page ${currentPageNumber} merged into Page ${currentPageNumber - 1}. Current page count: ${pageCount}`);
+
+                            } else {
+                                console.error(`Previous editor (${previousEditorId}) or page not found.`);
+                            }
+                        } else {
+                             console.log(">>> Conditions not met for page merge. Allowing default Backspace.");
+                             // 조건 미충족 시 기본 Backspace 동작 허용 (preventDefault() 호출 안 함)
+                             // 기본 동작 후 마커 및 툴바 업데이트 필요
+                             setTimeout(() => { updateLineMarkers(currentEditor, currentPage); updateToolbarState(); }, 0);
+                        }
+                    } else {
+                         // 커서가 시작점이 아니면 기본 Backspace 동작 허용
+                         // 기본 동작 후 마커 및 툴바 업데이트 필요
+                         setTimeout(() => { updateLineMarkers(currentEditor, currentPage); updateToolbarState(); }, 0);
+                    }
+                }
+                // *** Backspace 처리 완료 후 플래그 해제 ***
+                setTimeout(() => { isProcessingBackspace = false; }, 0);
+            }
+        });
+
+        // --- 초기화 ---
+        applyPageOrientation(); // 초기 페이지 방향 적용 (기본값 portrait)
+        applyPadding(verticalPaddingInput.value, horizontalPaddingInput.value); // 초기 여백 적용
+        const firstEditor = document.getElementById('editor-1');
+        const firstPage = firstEditor.closest('.a4-page'); // 첫 페이지 요소
+        const firstCanvas = firstPage.querySelector('.drawing-canvas'); // 첫 페이지 캔버스 찾기
+        if (firstEditor && firstCanvas) {
+            firstEditor.setAttribute('spellcheck', 'false');
+            // 캔버스 초기화 및 컨텍스트 저장
+             setTimeout(() => { // 페이지 레이아웃 계산 후 실행
+                 resizeCanvas(firstCanvas, firstPage);
+                 const ctx = firstCanvas.getContext('2d');
+                 firstCanvas.id = 'canvas-1'; // 초기 캔버스 ID 설정
+                 canvasContexts.set(firstCanvas.id, ctx);
+                 console.log(`Canvas context stored for ${firstCanvas.id}`);
+                 addCanvasEventListeners(firstCanvas); // 첫 캔버스에 이벤트 리스너 추가
+
+                 firstEditor.focus(); // 포커스
+                 // 초기 lastSelection 설정 및 라인 마커/툴바 업데이트
+                 const selection = window.getSelection();
+                 if (selection.rangeCount === 0) { // Range가 없으면 생성
+                     const range = document.createRange();
+                     range.setStart(firstEditor, 0);
+                     range.collapse(true);
+                     selection.addRange(range);
+                 }
+                 if (selection.rangeCount > 0) {
+                    lastSelection = { editor: firstEditor, range: selection.getRangeAt(0).cloneRange() };
+                 }
+                 updateLineMarkers(firstEditor, firstPage); // 초기 마커 생성
+                 updateToolbarState(); // 초기 툴바 상태 설정
+             }, 100); // 약간의 지연 추가
+        }
+
+    </script>
+
+
+
+</body></html>

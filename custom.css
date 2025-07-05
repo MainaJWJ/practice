@@ -1,0 +1,844 @@
+/* ==========================================================================
+   custom.css - windowsXP.css 테마를 덮어쓰거나, 추가적인 디자인을 정의하는 파일
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. 전체 페이지 및 창 레이아웃
+   ========================================================================== */
+
+/* 전체 페이지 배경 및 기본 여백 */
+body {
+    background-color: #5A7EDC;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    padding: 20px;
+}
+
+/* 전체 페이지 배경 및 기본 여백 */
+#desktop-body {
+    background-color: #5A7EDC;
+    background-image: url('./image/wallpaper.bmp');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    padding: 20px;
+    overflow: hidden; /* 이제 이 ID를 가진 body에만 적용됨 */
+}
+
+/* 창 내부의 전체 콘텐츠 레이아웃을 감싸는 컨테이너 */
+.window-content-wrapper {
+    display: flex;
+    align-items: stretch;
+    margin-left: 1px;
+    margin-right: 5px;
+}
+
+/* 폴더 내 왼쪽 탐색창 스타일 */
+.navigation-pane {
+    width: 200px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    background: #7ba2e7 linear-gradient(to bottom, #7ba2e7, #6375d6);
+    border-right: 1px solid #000080;
+}
+
+.navigation-pane *,
+.navigation-pane *:before,
+.navigation-pane *:after {
+    box-sizing: border-box;
+}
+
+.navigation-pane,
+.navigation-pane * {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Verdana, sans-serif !important;
+    font-size: 10pt !important;
+    -webkit-font-smoothing: auto !important;
+}
+
+.navigation-pane .sidebar-section {
+    padding: 12px;
+}
+
+.navigation-pane .sidebar-section:last-child {
+    padding-bottom: 0;
+}
+
+.navigation-pane .sidebar-section>label {
+    display: block;
+    margin-bottom: 0;
+}
+
+.navigation-pane label b {
+    display: block;
+    padding: 6px 13px 6px 13px;
+    font-weight: 600;
+    color: #215dc6;
+    border-radius: 5px 5px 0 0;
+    background: #fff linear-gradient(to right, #fff, #fff, #c6d3f7);
+    border: 1px solid #fff;
+    border-bottom: 0;
+}
+
+.navigation-pane ul {
+    padding: 6px 8px;
+    margin: 0;
+    list-style: none;
+    background: #d6dff7;
+    border: 1px solid #fff;
+    border-top: 0;
+}
+
+.navigation-pane li {
+    position: relative;
+    margin: 4px 0;
+}
+
+.navigation-pane li a {
+    display: flex;
+    align-items: center;
+    line-height: 16px;
+    padding-left: 0;
+    color: #215dc6;
+    text-decoration: none;
+}
+
+.navigation-pane li a:hover {
+    text-decoration: underline;
+}
+
+.navigation-pane li i {
+    display: inline-block;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+
+/* ==========================================================================
+   2. 사이드바 메뉴 아이콘을 위한 <img> 태그 스타일
+
+   ========================================================================== */
+
+   .navigation-pane .sidebar-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px; /* 글자와의 간격 */
+    vertical-align: middle; /* 텍스트와 세로로 중앙 정렬을 돕는 속성 */
+}
+
+/* ==========================================================================
+   3. 메인 콘텐츠 영역 스타일
+   ========================================================================== */
+
+.main-panel {
+    flex-grow: 1;
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    overflow-y: auto;
+    border-left: 1px solid #000080;
+}
+
+.blog-posts {
+    flex-grow: 1;
+}
+
+.post {
+    margin-bottom: 25px;
+}
+
+.post-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.right-sidebar {
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.title-bar-text {
+    display: flex;
+    align-items: center;
+}
+
+/* 제목 표시줄에 표시될 아이콘 스타일 */
+.title-bar-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px; /* 아이콘과 제목 텍스트 사이 간격 */
+    vertical-align: middle; /* 텍스트와 세로 정렬을 자연스럽게 맞춤 */
+}
+
+
+/* ==========================================================================
+   4. 브라우저 호환성 및 특수 스타일
+   ========================================================================== */
+
+/* 파이어폭스용 스크롤바 */
+@-moz-document url-prefix() {
+    html {
+        scrollbar-color: #c8d6fb #ecebe4;
+        scrollbar-width: thin;
+    }
+}
+
+
+/* ==========================================================================
+   5. 바탕화면 아이콘 스타일
+   ========================================================================== */
+
+.desktop-icons {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 65px;
+    height: 65px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.desktop-icon img {
+    width: 32px;
+    height: 32px;
+}
+
+.desktop-icon span {
+    color: white;
+    text-shadow: 1px 1px 2px black;
+    padding: 3px;
+    margin-top: 2px;
+    border: 1px solid transparent;
+}
+
+.desktop-icon.selected span {
+    background-color: #0c57e2;
+    border: 1px dotted #ffffff;
+}
+
+/* ==========================================================================
+   6. 작업표시줄 (Taskbar) 스타일
+   ========================================================================== */
+
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: linear-gradient(180deg, #0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #06f 93%, #005bff 95%, #003dd7 96%, #003dd7);
+    border-top: 1px solid #0831d9;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+}
+
+/* --- 시작 버튼 스타일 (최종 정리본) --- */
+.start-button {
+    width: 104px;
+    height: 30px;
+    background-image: url('./image/start.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
+    cursor: pointer;
+    transition: filter 0.1s ease-in-out;
+    margin-left: -4px;
+}
+
+button.start-button:hover {
+    box-shadow: none;
+    filter: brightness(120%);
+    background-size: 100% 100%;
+}
+
+button.start-button:active {
+    background-image: url('./image/start.png');
+    box-shadow: none;
+    filter: brightness(85%);
+    transition: none;
+    background-size: 100% 100%;
+}
+
+button.start-button:focus {
+    outline: none;
+    box-shadow: none;
+    background-size: 100% 100%;
+}
+
+.taskbar-windows {
+    flex-grow: 1;
+    height: 100%;
+    display: flex; /* 자식 요소들을 가로로 나열 */
+    align-items: center; /* 탭들을 세로 중앙에 정렬 */
+}
+
+.taskbar-notification-area {
+    background-color: #2077d7;
+    border: 1px solid #0041a1;
+    border-right-color: #2e8ae8;
+    border-bottom-color: #2e8ae8;
+    padding: 2px 10px;
+    color: white;
+    font-size: 11px;
+}
+
+/* ==========================================================================
+   7. 기타 추가 스타일
+   ========================================================================== */
+
+/* 새로 생성될 창 안의 iframe이 꽉 차게 만드는 스타일 */
+.window-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+
+
+
+/* ==========================================================================
+   12. 시작 메뉴 스타일
+   ========================================================================== */
+.start-menu {
+    position: fixed;
+    bottom: 30px; /* 작업표시줄 바로 위에 위치 */
+    left: 0;
+    width: 380px;
+    display: none; /* 초기에는 숨겨둠 */
+    flex-direction: column;
+    background-color: #4282d6;
+    border: 1px solid #0831d9;
+    border-bottom: none;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    box-shadow: 2px -2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 1001; /* 다른 창이나 작업표시줄보다 위에 오도록 설정 */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.start-menu.show {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.start-menu-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 5px 5px;
+    background: linear-gradient(to bottom, #1868ce 0%, #0e60cb 12%, #0e60cb 20%, #1164cf 32%, #1667cf 33%, #1b6cd3 47%, #1e70d9 54%, #2476dc 60%, #297ae0 65%, #3482e3 77%, #3786e5 79%, #428ee9 90%, #4791eb 100%);
+    color: #fff;
+    border-bottom: 1px solid #385de7;
+    box-shadow: 0 1px #385de7;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.user-icon-placeholder {
+    width: 42px;
+    height: 42px;
+    margin-right: 8px;
+    border-radius: 3px;
+    border: 2px solid rgba(222, 222, 222, 0.8);
+    background-color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #555;
+}
+
+.start-menu-header span {
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.start-menu-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    max-height: calc(100vh - 30px - 54px - 36px - 10px); /* 화면 높이에 맞춰 조절 */
+}
+
+.start-menu-left, .start-menu-right {
+    width: 50%;
+    padding: 6px 0 5px 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.start-menu-left {
+    background-color: #fff;
+    border-right: 1px solid #3a3aff5e;
+}
+
+.start-menu-right {
+    background-color: #cbe3ff;
+    color: #00136b;
+}
+
+.start-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 10px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.start-menu-item:hover {
+    background-color: #2f71cd;
+    color: #fff;
+}
+.start-menu-item:hover span,
+.start-menu-item:hover .menu-icon-placeholder {
+    color: #fff;
+}
+
+.menu-icon-placeholder {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    font-size: 16px;
+    line-height: 20px;
+    text-align: center;
+}
+
+.start-menu-left .start-menu-item { padding: 6px 10px; }
+.start-menu-left .menu-icon-placeholder {
+    width: 32px;
+    height: 32px;
+    font-size: 24px;
+    line-height: 32px;
+}
+.start-menu-left .start-menu-item span {
+    font-weight: bold;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.start-menu-item[data-type="all"]::after {
+    content: "▶";
+    margin-left: auto;
+    font-size: 8px;
+    opacity: 0.7;
+}
+.start-menu-item[data-type="all"]:hover::after { color: #fff; }
+.start-menu-right .start-menu-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.start-menu-separator {
+    height: 1px;
+    background-color: rgba(0,0,0,0.1);
+    margin: 6px 0;
+    box-shadow: 0 1px rgba(255,255,255,0.5);
+    flex-shrink: 0;
+}
+.start-menu-right .start-menu-separator {
+    background-color: #87b3e2b5;
+    box-shadow: 0 1px #fff;
+}
+
+.start-menu-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 36px;
+    padding: 0 10px;
+    background: linear-gradient(to bottom, #4282d6 0%, #3b85e0 3%, #418ae3 5%, #418ae3 17%, #3c87e2 21%, #3786e4 26%, #3482e3 29%, #2e7ee1 39%, #2374df 49%, #2072db 57%, #196edb 62%, #176bd8 75%, #1468d5 83%, #0f61cb 88%);
+    border-top: 1px solid #385de7;
+    flex-shrink: 0;
+}
+.start-menu-footer button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    gap: 5px;
+}
+.start-menu-footer button:hover { filter: brightness(1.2); }
+.start-menu-footer button:active { filter: brightness(0.9); }
+.footer-icon-placeholder {
+    width: 22px;
+    height: 22px;
+    font-size: 18px;
+    line-height: 22px;
+    text-align: center;
+}
+
+
+
+/* ==========================================================================
+   창 크기 조절 핸들 스타일
+   ========================================================================== */
+
+/* 크기 조절을 위한 핸들 기본 스타일 (눈에 보이지 않음) */
+/* ==========================================================================
+   창 크기 조절 핸들 스타일 (상태 변화 추가)
+   ========================================================================== */
+
+/* 크기 조절 핸들 - 평소 상태 (30x30px) */
+.resizer {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background: transparent;
+    z-index: 10;
+    transition: width 0.1s, height 0.1s; /* 크기 변경 시 부드러운 효과 (선택 사항) */
+}
+
+/* 크기 조절 핸들 - 클릭 중인 활성 상태 (50x50px) */
+.resizer.is-resizing {
+    width: 500px;
+    height: 500px;
+}
+
+/* 각 방향별 핸들의 위치와 마우스 커서 모양 설정 */
+.resizer.top-left     { top: -10px; left: -10px; cursor: nwse-resize; }
+.resizer.top-right    { top: -15px; right: -10px; cursor: nesw-resize; }
+.resizer.bottom-left  { bottom: -10px; left: -10px; cursor: nesw-resize; }
+.resizer.bottom-right { bottom: -10px; right: -10px; cursor: nwse-resize; }
+.resizer.top          { top: -10px; left: 10px; right: 10px; cursor: ns-resize; }
+.resizer.right        { top: 10px; right: -10px; bottom: 10px; cursor: ew-resize; }
+.resizer.bottom       { bottom: -10px; left: 10px; right: 10px; cursor: ns-resize; }
+.resizer.left         { top: 10px; left: -10px; bottom: 10px; cursor: ew-resize; }
+
+/* 클릭 중일 때 위치 보정 */
+.resizer.is-resizing.top-left     { top: -250px; left: -250px; }
+.resizer.is-resizing.top-right    { top: -250px; right: -250px; }
+.resizer.is-resizing.bottom-left  { bottom: -250px; left: -250px; }
+.resizer.is-resizing.bottom-right { bottom: -250px; right: -250px; }
+.resizer.is-resizing.top          { top: -250px; }
+.resizer.is-resizing.right        { right: -250px; }
+.resizer.is-resizing.bottom       { bottom: -250px; }
+.resizer.is-resizing.left         { left: -250px; }
+
+
+/* 창이 '최대화'되었을 때 적용될 스타일 */
+.window.maximized {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100% - 30px) !important; /* 작업표시줄 높이 제외 */
+    transform: none !important;
+}
+
+/* 창이 '최소화'되었을 때 창을 숨기는 스타일 */
+.window.minimized {
+    display: none;
+}
+
+/* 작업표시줄에 표시될 창 탭 버튼 스타일 */
+/* 작업표시줄 탭 - 평소 상태 (창이 최소화되었을 때, 튀어나온 모양) */
+/* ==========================================================================
+   작업표시줄 탭 스타일 (Windows XP Luna 테마)
+   ========================================================================== */
+
+/* ==========================================================================
+   작업표시줄 탭 스타일 (Windows XP Luna 테마 최종)
+   ========================================================================== */
+
+/* 탭 버튼의 기본적인 레이아웃과 글꼴 설정 */
+.taskbar .taskbar-tab {
+    box-sizing: border-box; /* 패딩과 테두리를 너비에 포함 */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* 텍스트 왼쪽 정렬 */
+    
+    width: 160px; /* 모든 탭의 너비를 160px로 고정 */
+    height: 23px;
+    margin: 0 2px;
+    padding: 0 8px; /* 좌우 여백 */
+    
+    font-family: "Tahoma", sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px #000000a0;
+    
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+/* 탭 - 평소 상태 (비활성) */
+.taskbar .taskbar-tab {
+    color: #fff;
+    background: linear-gradient(to bottom, #2d73e1 0%, #175fd3 15%, #1257d0 18%, #1459d1 56%, #1960d5 79%, #1e66da 86%, #246bdd 89%, #276de1 93%, #2264d8 100%);
+    border: 1px solid #002c9c;
+    box-shadow: inset 1px 1px #59a6f8, 1px 1px 1px #00000050;
+}
+
+/* 탭에 마우스를 올렸을 때 */
+.taskbar .taskbar-tab:hover {
+    background: linear-gradient(to bottom, #3988f3 0%, #206be5 15%, #1963e1 18%, #1965e1 56%, #216be5 79%, #2772e9 86%, #2e77ec 89%, #327bef 93%, #2a6ee8 100%);
+    box-shadow: inset 1px 1px #80c2f9, 1px 1px 1px #00000050;
+}
+
+/* 탭 - 활성 상태 (눌린 모양) */
+.taskbar .taskbar-tab.active {
+    color: white;
+    background: linear-gradient(to bottom, #1152a8 0%, #1056b3 3%, #1459b7 6%, #165bb9 10%, #185ebe 15%, #1b63c4 24%, #1e67c8 48%, #1d65c4 53%, #195cb9 76%, #1754ac 91%, #12489c 100%);
+    box-shadow: inset 1px 1px 1px #0e428c;
+    border-color: #082b8c;
+}
+
+
+/* ==========================================================================
+   컨텍스트 메뉴 스타일
+   ========================================================================== */
+.context-menu {
+    position: absolute;
+    background-color: #f0f0f0; /* XP 메뉴 배경색 */
+    border: 1px solid #808080;
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+    padding: 2px;
+    z-index: 1002; /* 다른 모든 요소 위에 표시 */
+    min-width: 150px;
+    font-size: 11px;
+    color: #000;
+    list-style: none;
+}
+
+.context-menu-item {
+    padding: 3px 20px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.context-menu-item:hover {
+    background-color: #2f71cd; /* XP 하이라이트 색상 */
+    color: #fff;
+}
+
+/* 메뉴 구분선 스타일 */
+.context-menu-separator {
+    height: 1px;
+    background-color: #d3d3d3;
+    margin: 3px 1px;
+    box-shadow: 0 1px #fff;
+}
+
+
+/* 작업표시줄 탭 내부 아이콘 스타일 */
+.taskbar .taskbar-tab-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px; /* 아이콘과 텍스트 사이의 간격 */
+}
+
+
+/* ==========================================================================
+   알림 영역 아이콘 및 볼륨 팝업 스타일
+   ========================================================================== */
+
+.notification-icon {
+    position: relative;
+    padding: 0 4px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+.notification-icon img {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.volume-popup {
+    display: none;
+    position: absolute;
+    bottom: 28px;
+    right: 0;
+    width: 220px;
+    z-index: 10001;
+    background-color: #f7f6f2;
+    /* .window의 스타일을 상속받으므로, 여기서는 위치와 관련된 것만 정의 */
+}
+
+.volume-popup.show {
+    display: block;
+}
+
+/* 볼륨 팝업 안의 '음소거' 라벨 글자색 변경 */
+.volume-popup .field-row label {
+    color: #000000; /* 원하는 색상으로 변경하세요 */
+
+}
+
+
+/* ==========================================================================
+   폴더 창 내부 툴바 스타일
+   ========================================================================== */
+
+/* 툴바 전체 컨테이너 */
+.folder-toolbars {
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #c5c5c5;
+    padding-bottom: 2px;
+}
+
+/* 메뉴 표시줄 (File, Edit...) */
+.menu-bar {
+    display: flex;
+    background-color: #e2e2e2;
+    padding: 2px 4px;
+    border-bottom: 1px solid #c5c5c5;
+}
+/* 메뉴 표시줄 (File, Edit...) */
+.menu-bar {
+    display: flex;
+    background-color: #e2e2e2;
+    padding: 2px 4px;
+    border-bottom: 1px solid #c5c5c5;
+}
+
+/* 상위 메뉴 아이템 (File, Edit 등) 컨테이너 */
+.menu-item {
+    position: relative; /* 하위 메뉴의 기준점 */
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.menu-item u {
+    text-decoration: underline;
+}
+
+/* 마우스를 올렸을 때의 하이라이트 효과 */
+.menu-item:hover, .menu-item.active {
+    background-color: #b7d2ff;
+    border: 1px solid #0a246a;
+}
+
+/* 하위 메뉴 (평소에는 숨겨져 있음) */
+.dropdown-menu {
+    display: none; /* 평소에는 숨김 */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #f0f0f0;
+    border: 1px solid #808080;
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+    padding: 2px;
+    z-index: 10;
+    min-width: 150px;
+    list-style: none;
+}
+
+/* 상위 메뉴가 활성화(.active)되면 하위 메뉴를 보여줌 */
+.menu-item.active .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu li {
+    padding: 3px 20px;
+    white-space: nowrap;
+}
+.dropdown-menu li:hover {
+    background-color: #2f71cd;
+    color: #fff;
+}
+.dropdown-menu li.separator {
+    height: 1px;
+    background-color: #d3d3d3;
+    margin: 3px 1px;
+    padding: 0;
+}
+
+.menu-bar u {
+    text-decoration: underline;
+}
+
+/* 표준 단추 모음 (뒤로, 검색...) */
+.standard-buttons-bar {
+    display: flex;
+    align-items: center;
+    padding: 2px;
+}
+
+.toolbar-button {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: 1px solid transparent;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+.toolbar-button:hover {
+    border: 1px solid #3399ff;
+    background-color: #cce5ff;
+}
+.toolbar-button:active {
+    background-color: #99ccff;
+}
+.toolbar-button img {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}
+.toolbar-button span {
+    font-size: 11px;
+}
+
+/* 툴바 구분선 */
+.toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background-color: #c5c5c5;
+    margin: 0 4px;
+}
+
+/* 주소 표시줄 */
+.address-bar {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+}
+.address-bar label {
+    color: grey;
+    margin-right: 5px;
+}
+.address-bar input {
+    flex-grow: 1; /* 남는 공간 모두 차지 */
+    border: 1px solid #7f9db9;
+    padding: 2px 4px;
+    font-size: 11px;
+}

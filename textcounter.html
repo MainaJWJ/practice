@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!-- saved from url=(1333)https://ff4865a905512c0c930327677d41227f03feed944e71ffbdb81afe8-apidata.googleusercontent.com/download/storage/v1/b/www.jun0824.com/o/wordcounter.html?jk=AXbWWmltroe4oZYwwuI6MCorohLjhepESGRkySq4QGqGdSpMjHV6hutzdiXEfbDdif8LvmNK741qyN2WSZXEI1uFdcUuaH5skJUwd6RAcxQ7f2TrpjFIZFfR9soiDV8zXtcVX1xQywSSQQLPkT3Zimwthaq95CYmfnhxWp0TnfawBbxl1trmigsWl_HwlpfDHJ_FOcWrk2kdXVmJi9W2Tsc9r7veP5d0uimYiQPYKxFQr1cxDSv6uSkTkKtBwRxIwHeA2E7NmwTSqPF7TvKKKDWrByboWFcquNo6QlHjXr_FmHLDeQDl0J7mNszP0TaMf6lhZ1VJhvJV3AunwnXMbGh0tNbxIYzapuEg3iZaOPEX5BoCwI69HMZblkAzZ-g6PeO8r7WmFSrMtFyjAdIW3YuJzs1qpUPk7wAulAPOF5s_bf_FpxXU0IyC9dfDQPCd2hQKM9UusR6Zcr5ECUfbi2SAFCiGZwM5RGxdnmRo-%2Dsfg7Ihpjcc6NWNU-tPLABnBjkN4qS0OimR4kDiwnOzSiNa5kqHVMZa3AQpUzcx_v5qDK0B9f9H0aJRjosOfQTRWcppPwAGJTCpIkP8fR6xU5SCDsdJK3oJ-2V0SbwZO6FiQOfjy7IWjjb0-3tLRLrAJXEEELpL1vOWmuAkBOSomLLKvqbJDqMq3XJ31rsVRoyqtkadq6Uj49Lp17BQmhnVuGweK_5Alb7NNtf3bA6Ot7WHa_xTuuPiECqVT3A2SxfX_VGliwiUtOFD9Y96C15hn08Yjgxb2pVwmYX2r-T6qcXjgdS3bddo-wj877_6UHI0gs5fsxGOEFOlKSAB6WcOdqU25Sup9AmCbA8DEW-Tzlg5dgcCnNHcbFAstfWM1z5u0l3cYwLAA53bmt5AmlUg4gaeEXIUla3GeHm2g1ferRXpYxfWWdXa9J9G3doXdHWOu453nICiJCydwb9ctMSiq0IR3brbQs15ZYmfgzKMsgLjZ-FPGyW5RKTWtFmI-fGc4H3brCFSqsJ-2DZJ-KWOlZq0BL94_L6cK7EfaeZekpROYLqf6L3Zncn81rh-kJ77VuKtNMj2h_lxPmYRD6EChToP5r-r_c-_vatenthQtfoxgcK1jZKcDVkLB6j7If3zO4ejuqVGkQ53xjbtRqFhl-BsX-LsDm0LagfYqw&isca=1 -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL 저장 메모장 (글자 수 분리, TXT 다운로드)</title>
+    <link rel="stylesheet" href="windowsXP.css">
+
+    <style>
+        /* CSS 스타일링 */
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 25px;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+            box-sizing: border-box;
+        }
+        h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        p.description { /* 설명 단락 스타일 명시 */
+            color: #555;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        #memoArea {
+            width: 100%;
+            height: 350px;
+            margin-bottom: 5px;
+            padding: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        /* --- 글자 수 표시 스타일 수정 --- */
+        #charCountContainer {
+            display: flex; /* Flexbox 레이아웃 사용 */
+            justify-content: flex-end; /* 오른쪽 정렬 */
+            gap: 15px; /* 양쪽 카운트 사이 간격 */
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px; /* 위쪽 마진 추가 */
+            margin-bottom: 15px;
+            height: 1.2em;
+            padding-right: 5px;
+        }
+        /* 버튼 공통 스타일 */
+        button {
+            padding: 12px 20px;
+            color: rgb(31, 26, 186);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: block;
+            width: 100%;
+            transition: background-color 0.2s ease;
+            box-sizing: border-box;
+            margin-top: 10px; /* 버튼 사이 간격 */
+        }
+        /* URL 저장 버튼 */
+        #saveUrlBtn {
+            background-color: #007bff;
+        }
+        #saveUrlBtn:hover {
+            background-color: #0056b3;
+        }
+        /* TXT 다운로드 버튼 */
+        #downloadTxtBtn {
+            background-color: #28a745; /* 초록색 계열 */
+        }
+        #downloadTxtBtn:hover {
+            background-color: #218838; /* 호버 시 약간 어두운 초록색 */
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 600px) {
+            body { padding: 15px; }
+            .container { padding: 20px; }
+            #memoArea { height: 250px; }
+            h1 { font-size: 1.5rem; }
+            #charCountContainer { gap: 10px; font-size: 0.85em;} /* 모바일에서 간격/크기 조정 */
+            button { font-size: 0.95rem; padding: 10px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h3>온라인 URL 메모</h3>
+        <p class="description">
+            아래 입력란에 메모를 작성하고 버튼을 눌러 저장하거나 다운로드하세요.<br>
+            'URL에 저장'은 현재 주소에 메모를 포함시켜 공유할 수 있게 합니다.<br>
+            'TXT로 다운로드'는 메모 내용을 텍스트 파일로 저장합니다.
+        </p>
+
+        <textarea id="memoArea" placeholder="여기에 메모를 입력하세요..."></textarea>
+
+        <p id="charCountContainer">
+            <span id="charCountWithSpaces">공백 포함: 0</span>
+            <span id="charCountWithoutSpaces">공백 제외: 0</span>
+        </p>
+
+        <button id="saveUrlBtn" onclick="saveNoteToUrl()">URL에 저장</button>
+        <button id="downloadTxtBtn">TXT로 다운로드</button>
+    </div>
+
+    <script>
+        // --- 요소 가져오기 ---
+        const memoArea = document.getElementById('memoArea');
+        const charCountWithSpaces = document.getElementById('charCountWithSpaces'); // 공백 포함 span
+        const charCountWithoutSpaces = document.getElementById('charCountWithoutSpaces'); // 공백 제외 span
+        const downloadTxtBtn = document.getElementById('downloadTxtBtn'); // 다운로드 버튼
+
+        // --- 글자 수 업데이트 함수 (수정됨) ---
+        function updateCharCount() {
+            const currentText = memoArea.value;
+            const lengthWithSpaces = currentText.length;
+            // 정규식 \s는 모든 종류의 공백 문자(띄어쓰기, 탭, 줄바꿈 등)를 의미합니다.
+            // .replace(/\s/g, '')는 모든 공백 문자를 빈 문자열로 대체합니다.
+            const lengthWithoutSpaces = currentText.replace(/\s/g, '').length;
+
+            // 화면에 각 글자 수를 업데이트합니다.
+            charCountWithSpaces.textContent = `공백 포함: ${lengthWithSpaces}`;
+            charCountWithoutSpaces.textContent = `공백 제외: ${lengthWithoutSpaces}`;
+        }
+
+        // --- 페이지 로드 시 실행될 초기화 함수 ---
+        function initializeApp() {
+            loadNoteFromURL(); // URL에서 메모 로딩
+            updateCharCount(); // 초기 글자 수 업데이트
+        }
+
+        // --- URL에서 메모 불러오는 함수 ---
+        function loadNoteFromURL() {
+            if (window.location.hash && window.location.hash.length > 1) {
+                try {
+                    const encodedData = window.location.hash.substring(1);
+                    const decodedText = decodeURIComponent(escape(atob(encodedData)));
+                    memoArea.value = decodedText;
+                } catch (error) {
+                    console.error("메모 로딩 중 오류 발생:", error);
+                    // alert("메모를 불러오는 데 실패했습니다."); // 필요 시 주석 해제
+                }
+            }
+        }
+
+        // --- 메모를 URL에 저장하는 함수 (이름 변경됨) ---
+        function saveNoteToUrl() {
+            const memoText = memoArea.value;
+            try {
+                const encodedText = btoa(unescape(encodeURIComponent(memoText)));
+                window.location.hash = encodedText;
+                alert('메모가 URL에 저장되었습니다! 변경된 현재 페이지 주소(URL)를 복사하여 공유하거나 나중에 사용하세요.');
+            } catch (error) {
+                console.error("메모 저장 중 오류 발생:", error);
+                alert("메모를 URL에 저장하는 데 실패했습니다.");
+            }
+        }
+
+        // --- TXT 다운로드 버튼 이벤트 리스너 ---
+        downloadTxtBtn.addEventListener('click', () => {
+            const memoText = memoArea.value;
+
+            // Blob(Binary Large Object) 생성: 메모 텍스트를 포함하는 파일 객체.
+            // 'text/plain;charset=utf-8' : MIME 타입을 텍스트로 지정하고, UTF-8 인코딩 사용 명시 (한글 등 깨짐 방지).
+            const blob = new Blob([memoText], { type: 'text/plain;charset=utf-8' });
+
+            // Blob을 가리키는 임시 URL 생성.
+            const objectUrl = URL.createObjectURL(blob);
+
+            // 다운로드를 위한 임시 <a> 태그 생성.
+            const link = document.createElement('a');
+            link.href = objectUrl;       // 링크의 주소를 Blob URL로 설정.
+            link.download = 'memo.txt'; // 다운로드될 파일의 기본 이름 설정.
+
+            // 링크를 문서에 추가 (Firefox 등 일부 브라우저에서 필요).
+            document.body.appendChild(link);
+            // 프로그래밍 방식으로 링크 클릭 (다운로드 시작).
+            link.click();
+            // 다운로드 후 임시 링크 제거.
+            document.body.removeChild(link);
+
+            // 생성된 Object URL 해제 (메모리 누수 방지).
+            // 다운로드가 시작될 시간을 약간 확보하기 위해 setTimeout 사용 가능.
+            setTimeout(() => {
+                URL.revokeObjectURL(objectUrl);
+                // console.log("Object URL revoked:", objectUrl); // 확인용 로그
+            }, 100); // 100ms 지연
+        });
+
+        // --- 입력 이벤트 리스너 ---
+        memoArea.addEventListener('input', updateCharCount);
+
+        // --- 페이지 로딩 완료 시 초기화 ---
+        window.onload = initializeApp;
+
+    </script>
+
+
+</body></html>

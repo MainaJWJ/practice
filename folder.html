@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>폴더</title>
+    
+    <link rel="stylesheet" href="windowsXP.css">
+    <link rel="stylesheet" href="custom.css">
+
+    <style>
+        /* iframe 내부 환경에 맞게 body와 window 스타일을 초기화합니다. */
+        body {
+            padding: 0;
+            margin: 0;
+            background: none;
+            overflow: hidden;
+        }
+        
+        .window {
+            /* 이 창의 레이아웃을 Grid로 설정합니다. 나중에 폴더 상단 링크들 여기서 넣을거임 */
+            display: grid;
+            /* 세로 구성을 '내용(1fr)-상태표시줄(auto)'의 3단 행으로 정의합니다. */
+            /* 1fr은 남는 공간을 모두 차지하라는 뜻입니다. */
+            grid-template-rows: auto 1fr auto;
+            
+            /* iframe 안을 꽉 채우도록 설정합니다. */
+            width: 100%;
+            height: 100vh; 
+            margin: 0;
+            border: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+<div class="folder-toolbars">
+<div class="menu-bar">
+    <div class="menu-item">
+        <span><u>F</u>ile</span>
+        <ul class="dropdown-menu">
+            <li>Create Shortcut</li>
+            <li>Delete</li>
+            <li>Rename</li>
+            <li>Properties</li>
+            <li class="separator"></li>
+            <li>Close</li>
+        </ul>
+    </div>
+    <div class="menu-item">
+        <span><u>E</u>dit</span>
+        <ul class="dropdown-menu">
+            <li>Undo</li>
+            <li class="separator"></li>
+            <li>Cut</li>
+            <li>Copy</li>
+            <li>Paste</li>
+        </ul>
+    </div>
+    <div class="menu-item">
+        <span><u>V</u>iew</span>
+        <ul class="dropdown-menu">
+            <li>Thumbnails</li>
+            <li>Tiles</li>
+            <li>Icons</li>
+        </ul>
+    </div>
+    <div class="menu-item"><span><u>F</u>avorites</span></div>
+    <div class="menu-item"><span><u>T</u>ools</span></div>
+    <div class="menu-item"><span><u>H</u>elp</span></div>
+    </div>
+
+
+    <div class="standard-buttons-bar">
+        <button class="toolbar-button">
+            <img src="./image/back.png" alt="뒤로">
+            <span>뒤로</span>
+        </button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-button">
+            <img src="./image/search.png" alt="검색">
+            <span>검색</span>
+        </button>
+        <button class="toolbar-button">
+            <img src="./image/folders.png" alt="폴더">
+            <span>폴더</span>
+        </button>
+    </div>
+    <div class="address-bar">
+        <label for="address-input">주소</label>
+        <input type="text" id="address-input" value="내 컴퓨터" readonly>
+    </div>
+</div>
+
+<main class="blog-posts">
+    </main>
+    <div class="window">
+        <div class="window-content-wrapper">
+            <aside class="navigation-pane"> <!-- 폴더 내 좌측 사이드바 관련 -->
+                <div class="sidebar-section"> 
+                    <label><b>파일 및 폴더 작업</b></label>
+                    <ul>
+                        <li><a href="#"><img src="./image/mycomputer.png" class="sidebar-icon" alt="">내 컴퓨터</a></li>
+                        <li><a href="#"><img src="./image/network.png" class="sidebar-icon" alt="">네트워크</a></li>
+                    </ul>
+                </div>
+                <div class="sidebar-section">
+                    <label><b>기타 위치</b></label>
+                    <ul>
+                        <li><a href="#"><img src="./image/folder.png" class="sidebar-icon" alt="">새 폴더</a></li>
+                        <li><a href="./calculator.html"><img src="./image/calculator.png" class="sidebar-icon" alt="">계산기</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <div class="main-panel"> <!-- 폴더 내 중앙부분 관련 -->
+                
+                <main class="blog-posts">
+                    <article class="post">
+                        <h1 class="post-title">main 내부에 본문</h1>
+                    </article>
+                    <section class="component-showcase">
+                        <h4>Button (버튼)</h4>
+                        <div class="example-group">
+                            <button>기본 버튼</button>
+                            <button class="active">눌린 버튼 (Active)</button>
+                            <button disabled>비활성 버튼 (Disabled)</button>
+                            <button class="focused">포커스된 버튼 (Focused)</button>
+                        </div>
+                    </section>
+                    <section class="component-showcase">
+                        <br><br><br>
+                        <h4>Checkbox (체크박스)</h4>
+                        <div class="example-group">
+                            <div class="field-row">
+                                <input type="checkbox" id="showcase_check1">
+                                <label for="showcase_check1">일반 체크박스</label>
+                            </div>
+                            <div class="field-row">
+                                <input checked type="checkbox" id="showcase_check2">
+                                <label for="showcase_check2">선택된 체크박스</label>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+
+                <aside class="right-sidebar"> <!-- 폴더 내 우측 사이드바 관련 -->
+                    <fieldset>
+                        <legend>About Me</legend>
+                        <p style="font-size:11px;">aside 내부에 오른쪽 사이드 넣기</p>
+                    </fieldset>
+                </aside>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <p class="status-bar-field">준비 완료</p>
+        </div>
+
+    </div>
+
+    <script>
+        const tabs = document.querySelectorAll("menu[role=tablist]");
+        for (let i = 0; i < tabs.length; i++) {
+            const tab = tabs[i];
+            const tabButtons = tab.querySelectorAll("button[role=tab]");
+
+            tabButtons.forEach((btn) =>
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    tabButtons.forEach((button) => {
+                        button.setAttribute("aria-selected", button === e.target);
+                    });
+                    openTab(e, tab);
+                })
+            );
+        }
+
+        function openTab(event, tab) {
+            const articles = tab.parentNode.querySelectorAll('[role="tabpanel"]');
+            articles.forEach((p) => {
+                p.setAttribute("hidden", true);
+            });
+            const article = tab.parentNode.querySelector(
+                `[role="tabpanel"]#${event.target.getAttribute("aria-controls")}`
+            );
+            if (article) {
+                article.removeAttribute("hidden");
+            }
+        }
+
+
+        // --- 상단 드롭다운 메뉴 기능 ---
+const menuItems = document.querySelectorAll('.menu-bar .menu-item');
+
+menuItems.forEach(menuItem => {
+    menuItem.addEventListener('click', (e) => {
+        e.stopPropagation(); // 이벤트가 부모로 전파되는 것을 막음
+        
+        // 현재 클릭한 메뉴가 이미 활성화 상태인지 확인
+        const isActive = menuItem.classList.contains('active');
+
+        // 모든 메뉴의 'active' 클래스를 먼저 제거
+        menuItems.forEach(item => item.classList.remove('active'));
+
+        // 이미 활성화된 메뉴를 다시 클릭한 게 아니라면, active 클래스 추가
+        if (!isActive) {
+            menuItem.classList.add('active');
+        }
+    });
+});
+
+// 메뉴 바깥 영역을 클릭하면 모든 메뉴를 닫음
+document.addEventListener('click', () => {
+    menuItems.forEach(item => item.classList.remove('active'));
+});
+
+
+
+
+    </script>
+
+</body>
+</html>
