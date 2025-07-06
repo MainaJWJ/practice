@@ -10,21 +10,6 @@
     	background: #ece9d8
     }
 
-    h1 {
-    	font-size: 5rem
-    }
-
-    h2 {
-    	font-size: 2.5rem
-    }
-
-    h3 {
-    	font-size: 2rem
-    }
-
-    h4 {
-    	font-size: 1.5rem
-    }
 
     u {
     	text-decoration: none;
@@ -62,7 +47,7 @@
     	outline: 1px dotted #000
     }
 
-    ::-webkit-scrollbar {
+    		::-webkit-scrollbar {
     	width: 16px
     }
 

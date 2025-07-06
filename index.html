@@ -35,7 +35,7 @@
 
 
         <a href="./jspaint/index.html" class="desktop-icon" data-title="그림판"  data-icon-url="./image/paint.png" data-open-mode="window">
-            <img src="./image/paint.png" alt="그림판">
+            <img src="./image/mspaint.png" alt="그림판">
             <span>그림판</span>
         </a>
 
@@ -71,23 +71,26 @@
     </div>
 
     <div class="start-menu" id="startMenu">
-        <div class="start-menu-header">
-            <div class="user-icon-placeholder">👤</div> <span>User</span>
+<div class="start-menu-header">
+    <img src="./image/usericon.png" class="user-avatar" alt="User">
+    <span class="user-name">jun0824</span>
+</div>
+<div class="start-menu-body">
+    <div class="start-menu-left" id="startMenuLeft">
         </div>
-        <div class="start-menu-body">
-            <div class="start-menu-left" id="startMenuLeft">
-            </div>
-            <div class="start-menu-right" id="startMenuRight">
-            </div>
+    <div class="start-menu-right" id="startMenuRight">
         </div>
-        <div class="start-menu-footer">
-            <button id="logOffButton">
-                <span class="footer-icon-placeholder">🔒</span> <span>Log Off</span>
-            </button>
-            <button id="turnOffButton">
-                <span class="footer-icon-placeholder">⏻</span> <span>Turn Off</span>
-            </button>
-        </div>
+</div>
+<div class="start-menu-footer">
+    <button id="logOffButton">
+        <img src="./image/logoff.png" alt="Log Off">
+        <span>Log Off</span>
+    </button>
+    <button id="turnOffButton">
+        <img src="./image/turnoff.png" alt="Turn Off">
+        <span>Turn Off Computer</span>
+    </button>
+</div>
     </div>
 
 
@@ -97,7 +100,7 @@
         <div class="taskbar-windows"></div>
 
 
-        <!-- 작업바 내부 가장 왼쪽에 넣을 아이콘들 -->
+        <!-- 작업바 내부 가장 오른쪽에 넣을 아이콘들 -->
     <div class="notification-icon" id="volume-icon-container">
     <img src="./image/volume.png" alt="볼륨" title="볼륨">
         <div class="volume-popup">
@@ -324,50 +327,84 @@ win.taskbarTab = taskbarTab;
     const startMenuLeft = document.getElementById('startMenuLeft');
     const startMenuRight = document.getElementById('startMenuRight');
 
-    const appLinks = [
-        { name: '네이버', url: 'https://www.naver.com/', icon: '🌐', type: 'internet' },
-        { name: '구글', url: 'https://www.google.co.kr/', icon: '🔍', type: 'main' },
-        { name: '내 문서', url: '#', icon: '📁', type: 'my' },
-        { name: '내 최근 문서', url: '#', icon: '📑', type: 'my' },
-        { name: '내 그림', url: '#', icon: '🌄', type: 'my' },
-        { name: '내 음악', url: '#', icon: '🎵', type: 'my' },
-        { name: '내 컴퓨터', url: '#', icon: '💻', type: 'my' },
-        { name: '제어판', url: '#', icon: '⚙️', type: 'settings' },
-        { name: '연결 대상', url: '#', icon: '🔗', type: 'settings' },
-        { name: '프린터 및 팩스', url: '#', icon: '📠', type: 'settings' },
-        { name: '도움말 및 지원', url: '#', icon: '❓', type: 'support' },
-        { name: '검색', url: '#', icon: '🔎', type: 'support' },
-        { name: '실행...', url: '#', icon: '🚀', type: 'support' },
-    ];
+const appLinks = [
+    // --- 왼쪽 열 ---
+    { name: 'Internet', sub: 'Internet Explorer', icon: './image/explore.png', type: 'main', url: 'https://www.google.com' },
+    { name: 'E-mail', sub: 'Outlook Express', icon: './image/messenger.png', type: 'main' },
+    { separator: true, type: 'left' },
+    { name: '그림판', icon: './image/mspaint.png', type: 'recent', url: './jspaint/index.html' },
+    { name: '문서편집기', icon: './image/texteditor.png', type: 'recent', url: './texteditor.html' },
+    { name: '미디어 플레이어', icon: './image/mediaplayer.png', type: 'recent', url: './webamp/index.html' },
+    { name: '공쏘기 게임', icon: './image/pinball.png', type: 'recent', url: './ballgame.html' },
+    { separator: true, type: 'left' },
+    { name: '모든 프로그램', icon: './image/search.png', type: 'all' },
 
-    function createMenuItem(linkData, isBold = false) {
-        const linkElement = document.createElement('a');
-        linkElement.classList.add('start-menu-item');
-        linkElement.href = linkData.url;
-        if (linkData.url && linkData.url !== '#') {
-            linkElement.target = '_blank';
-        }
+    // --- 오른쪽 열 ---
+    { name: '내 문서', icon: './image/docfolder.png', type: 'my', url: './folder.html' },
+    { name: '내 최근 문서', icon: './image/recentfolder.png', type: 'my' },
+    { name: '내 그림', icon: './image/photofolder.png', type: 'my' },
+    { name: '내 음악', icon: './image/musicfolder.png', type: 'my' },
+    { name: '내 컴퓨터', icon: './image/mycomputer.png', type: 'my' },
+    { separator: true, type: 'right' },
+    { name: '제어판', icon: './image/panel.png', type: 'settings' },
+    { name: '프린터 및 팩스', icon: './image/printer.png', type: 'settings' },
+    { separator: true, type: 'right' },
+    { name: '도움말 및 지원', icon: './image/info.png', type: 'support' },
+    { name: '검색', icon: './image/search.png', type: 'support' },
+    { name: '실행...', icon: './image/execute.png', type: 'support' },
+];
 
-        const iconElement = document.createElement('span');
-        iconElement.classList.add('menu-icon-placeholder');
-        iconElement.textContent = linkData.icon || '';
+function createMenuItem(linkData, isMain = false) {
+    const linkElement = document.createElement('a');
+    linkElement.classList.add('start-menu-item');
+    linkElement.href = linkData.url || '#'; // 링크 정보는 유지
 
-        const textElement = document.createElement('span');
-        textElement.textContent = linkData.name;
-        if (isBold) textElement.style.fontWeight = 'bold';
-
-        linkElement.appendChild(iconElement);
-        linkElement.appendChild(textElement);
-
-        if (linkData.type === 'all') {
-            linkElement.dataset.type = 'all';
-            linkElement.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert('모든 프로그램 기능은 아직 구현되지 않았습니다.');
-            });
-        }
-        return linkElement;
+    const iconElement = document.createElement('img');
+    iconElement.src = linkData.icon || './image/default-icon.png';
+    
+    const textWrapper = document.createElement('div');
+    textWrapper.className = 'text-wrapper';
+    
+    const textElement = document.createElement('span');
+    textElement.textContent = linkData.name;
+    if (isMain) {
+        textElement.style.fontWeight = 'bold';
     }
+    
+    textWrapper.appendChild(textElement);
+
+    if (linkData.sub) {
+        const subText = document.createElement('small');
+        subText.textContent = linkData.sub;
+        textWrapper.appendChild(subText);
+    }
+
+    linkElement.appendChild(iconElement);
+    linkElement.appendChild(textWrapper);
+
+    // ▼▼▼ 클릭 이벤트 리스너를 여기에 추가합니다 ▼▼▼
+    linkElement.addEventListener('click', (e) => {
+        e.preventDefault(); // 링크의 기본 동작(페이지 이동)을 막습니다.
+        
+        // 유효한 URL이 있는 항목만 창으로 엽니다.
+        if (linkData.url && linkData.url !== '#') {
+            createWindow({
+                title: linkData.name,
+                iframeSrc: linkData.url,
+                iconUrl: linkData.icon
+            });
+            // 메뉴를 클릭했으니 시작 메뉴를 닫습니다.
+            startMenu.classList.remove('show');
+        }
+
+        // '모든 프로그램'과 같이 특별한 동작이 필요한 경우
+        if (linkData.type === 'all') {
+            alert('모든 프로그램 기능은 아직 구현되지 않았습니다.');
+        }
+    });
+
+    return linkElement;
+}
 
     function createSeparator() {
         const separator = document.createElement('div');
@@ -375,22 +412,30 @@ win.taskbarTab = taskbarTab;
         return separator;
     }
 
-    function renderStartMenu() {
-        startMenuLeft.innerHTML = '';
-        startMenuRight.innerHTML = '';
+function renderStartMenu() {
+    startMenuLeft.innerHTML = '';
+    startMenuRight.innerHTML = '';
 
-        appLinks.filter(link => link.type === 'internet').forEach(link => startMenuLeft.appendChild(createMenuItem(link, true)));
-        startMenuLeft.appendChild(createSeparator());
-        appLinks.filter(link => link.type === 'main').forEach(link => startMenuLeft.appendChild(createMenuItem(link)));
-        startMenuLeft.appendChild(createSeparator());
-        startMenuLeft.appendChild(createMenuItem({ name: '모든 프로그램', icon: '▶', url: '#', type: 'all' }, true));
+    // --- 왼쪽 열 ---
+    // 인터넷, 이메일 등 주요 프로그램 (type: 'main' 또는 'internet')
+    appLinks.filter(link => link.type === 'main' || link.type === 'internet').forEach(link => startMenuLeft.appendChild(createMenuItem(link, true)));
+    startMenuLeft.appendChild(createSeparator());
 
-        appLinks.filter(link => link.type === 'my').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-        startMenuRight.appendChild(createSeparator());
-        appLinks.filter(link => link.type === 'settings').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-        startMenuRight.appendChild(createSeparator());
-        appLinks.filter(link => link.type === 'support').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-    }
+    // ▼▼▼ 이 부분이 새로 추가되었습니다 ▼▼▼
+    // 최근에 사용한 프로그램 (type: 'recent')
+    appLinks.filter(link => link.type === 'recent').forEach(link => startMenuLeft.appendChild(createMenuItem(link, false)));
+    // ▲▲▲ 여기까지 추가 ▲▲▲
+
+    startMenuLeft.appendChild(createSeparator());
+    startMenuLeft.appendChild(createMenuItem({ name: '모든 프로그램', icon: './image/all_programs.png', url: '#', type: 'all' }, true));
+
+    // --- 오른쪽 열 ---
+    appLinks.filter(link => link.type === 'my').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+    startMenuRight.appendChild(createSeparator());
+    appLinks.filter(link => link.type === 'settings').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+    startMenuRight.appendChild(createSeparator());
+    appLinks.filter(link => link.type === 'support').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+}
 
     startButton.addEventListener('click', (e) => {
         e.stopPropagation();
