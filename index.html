@@ -337,7 +337,7 @@ const appLinks = [
     { name: '미디어 플레이어', icon: './image/mediaplayer.png', type: 'recent', url: './webamp/index.html' },
     { name: '공쏘기 게임', icon: './image/pinball.png', type: 'recent', url: './ballgame.html' },
     { separator: true, type: 'left' },
-    { name: '모든 프로그램', icon: './image/search.png', type: 'all' },
+    { name: '모든 프로그램', icon: './image/allprogram.png', type: 'all' },
 
     // --- 오른쪽 열 ---
     { name: '내 문서', icon: './image/docfolder.png', type: 'my', url: './folder.html' },
@@ -427,7 +427,7 @@ function renderStartMenu() {
     // ▲▲▲ 여기까지 추가 ▲▲▲
 
     startMenuLeft.appendChild(createSeparator());
-    startMenuLeft.appendChild(createMenuItem({ name: '모든 프로그램', icon: './image/all_programs.png', url: '#', type: 'all' }, true));
+    startMenuLeft.appendChild(createMenuItem({ name: '모든 프로그램', icon: './image/allprogram.png', url: '#', type: 'all' }, true));
 
     // --- 오른쪽 열 ---
     appLinks.filter(link => link.type === 'my').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
