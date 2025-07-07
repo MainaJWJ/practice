@@ -1,36 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Webamp Modern" />
-    <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico" />
-    <title>Webamp Modern</title>
-    <style>
-
-      /* * {
-        box-sizing: border-box;
-      } */
-      /* DEBUG */
-      /* body {
-        background-image: url(/assets/winamp_classic/screenshot.png);
-        background-repeat: no-repeat;
-        image-rendering: pixelated;
-      }
-      #ui-root {
-        opacity: 0.4;
-      } */
-
-    </style>
-    <link rel="stylesheet" href="css/demo.css" />
-    <link rel="stylesheet" href="css/webamp.css" />
-    <style id="bitmap-css"></style>
-    <style id="truetypefont-css"></style>
   </head>
+
   <body>
-    <h1 id="status">Downloading JavaScript...</h1>
-    <div id="web-amp"></div>
-    <div id="experimental">Work in Progress</div>
-    <script type="module" src="./index.js"></script>
+    <div id="app" style="height: 100vh">
+      <!-- Webamp will attempt to center itself within this div -->
+    </div>
+    <script type="module">
+      import Webamp from "./webamp.bundle.min.mjs";
+      const webamp = new Webamp({
+        initialTracks: [
+          {
+            metaData: {
+              artist: "W.A.Mozart",
+              title: "Turkish March",
+            },
+
+            url: "./Turkish March.mp3",
+            duration: 259,
+          },
+          {
+            metaData: {
+              artist: "Johann Pachelbel",
+              title: "canon",
+            },
+            url: "./canon.mp3",
+            duration: 436,
+          },
+        ],
+      });
+
+      webamp.renderWhenReady(document.getElementById("app"));
+    </script>
   </body>
 </html>
