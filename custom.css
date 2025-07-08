@@ -27,6 +27,11 @@ body {
     background-attachment: fixed;
     padding: 20px;
     overflow: hidden; /* 이제 이 ID를 가진 body에만 적용됨 */
+        /* ▼▼▼ 텍스트 선택(드래그) 방지 코드 추가 ▼▼▼ */
+    -webkit-user-select: none; /* Chrome, Safari, Opera */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* Internet Explorer/Edge */
+    user-select: none;         /* 표준 속성 */
 }
 
 /* 창 내부의 전체 콘텐츠 레이아웃을 감싸는 컨테이너 */
@@ -766,4 +771,25 @@ button.start-button:focus {
     border: 1px solid #7f9db9;
     padding: 2px 4px;
     font-size: 11px;
+}
+
+
+/* 바탕화면 클릭 및 드래그를 위한 영역 스타일 */
+#desktop-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 30px); /* 작업 표시줄 높이를 제외한 전체 영역 */
+}
+
+
+/* ==========================================================================
+   바탕화면 드래그 선택 사각형 스타일
+   ========================================================================== */
+.selection-rectangle {
+    position: absolute;
+    border: 1px dotted #000000; /* 흰색 점선 테두리 */
+    z-index: 15; /* 아이콘 위에, 창보다는 아래에 위치 */
+    pointer-events: none; /* 사각형 자체가 마우스 이벤트를 방해하지 않도록 설정 */
 }

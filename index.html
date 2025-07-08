@@ -13,7 +13,9 @@
 
 <body>
 
-    <body id="desktop-body"></body>
+    <body id="desktop-body">
+            <div id="desktop-area">
+
     <div class="desktop-icons">
 
         <a href="./second page.html" class="desktop-icon" data-title="내 컴퓨터" data-icon-url="./image/mycomputer.png" data-open-mode="window">
@@ -65,8 +67,6 @@
                 <img src="./image/shell.png" alt="쉘">
                 <span>글자수세기</span>
             </a>     
-
-
         </a>
     </div>
 
@@ -135,7 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const startMenu = document.getElementById('startMenu');
     const clockElement = document.getElementById('taskbar-clock');
+    const volumeIconContainer = document.getElementById('volume-icon-container');
+    const volumePopup = volumeIconContainer.querySelector('.volume-popup');
+    const volumeSlider = document.getElementById('volume-slider');
+    const muteCheckbox = document.getElementById('mute-checkbox');
+
     let highestZIndex = 100;
+    let currentContextMenu = null;
 
     /* ==========================================================================
        2. 핵심 기능 함수 (창 관리, 시계 등)
@@ -145,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function bringToFront(windowEl) {
         highestZIndex++;
         windowEl.style.zIndex = highestZIndex;
-        
         document.querySelectorAll('.taskbar-tab').forEach(tab => tab.classList.remove('active'));
         if (windowEl.taskbarTab && !windowEl.classList.contains('minimized')) {
             windowEl.taskbarTab.classList.add('active');
@@ -157,9 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         let hours = now.getHours();
         let minutes = now.getMinutes();
-        let ampm = '오전';
-        if (hours >= 12) { ampm = '오후'; if (hours > 12) hours -= 12; } 
-        else if (hours === 0) { hours = 12; }
+        const ampm = hours >= 12 ? '오후' : '오전';
+        hours = hours % 12 || 12; // 12시간제로 변경
         minutes = String(minutes).padStart(2, '0');
         if (clockElement) clockElement.textContent = `${ampm} ${hours}:${minutes}`;
     }
@@ -167,14 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        3. 창 생성 및 상호작용 관리
     ========================================================================== */
-    
+
     // 새 창을 만드는 메인 함수
     function createWindow(options) {
         const windowEl = document.createElement('div');
         windowEl.className = 'window';
-        windowEl.style.cssText = `width: 660px; height: 500px; position: absolute; top: 40px; left: 250px; display: flex; flex-direction: column; padding: 3px`; /* <-- 이 줄을 추가합니다. */
-
-
+        windowEl.style.cssText = `width: 660px; height: 500px; position: absolute; top: 40px; left: 250px; display: flex; flex-direction: column; padding: 3px;`;
         const iconHtml = options.iconUrl ? `<img src="${options.iconUrl}" class="title-bar-icon" alt="">` : '';
         windowEl.innerHTML = `
             <div class="title-bar"><div class="title-bar-text">${iconHtml}${options.title}</div><div class="title-bar-controls"><button aria-label="Minimize"></button><button aria-label="Maximize"></button><button aria-label="Close"></button></div></div>
@@ -182,12 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="resizer top-left"></div><div class="resizer top-right"></div><div class="resizer bottom-left"></div><div class="resizer bottom-right"></div>
             <div class="resizer top"></div><div class="resizer right"></div><div class="resizer bottom"></div><div class="resizer left"></div>
         `;
-        
         document.body.appendChild(windowEl);
         makeWindowInteractive(windowEl, options);
     }
 
-    // 창에 모든 상호작용(드래그, 리사이즈, 버튼) 기능을 추가하는 함수
+    // 창에 모든 상호작용 기능을 추가하는 함수
     function makeWindowInteractive(win, options) {
         const titleBar = win.querySelector('.title-bar');
         const minimizeButton = win.querySelector('button[aria-label="Minimize"]');
@@ -196,23 +197,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let isMaximized = false;
         let originalState = {};
 
-// 작업표시줄 탭 생성 및 연결
-const taskbarTab = document.createElement('button');
-taskbarTab.className = 'taskbar-tab';
-
-// 아이콘이 있을 경우에만 img 태그를 추가
-if (options.iconUrl) {
-    taskbarTab.innerHTML = `<img src="${options.iconUrl}" class="taskbar-tab-icon">`;
-}
-// 텍스트는 span 태그로 감싸서 추가
-taskbarTab.innerHTML += `<span>${options.title}</span>`;
-
-taskbarWindows.appendChild(taskbarTab);
-win.taskbarTab = taskbarTab;
+        const taskbarTab = document.createElement('button');
+        taskbarTab.className = 'taskbar-tab';
+        if (options.iconUrl) {
+            taskbarTab.innerHTML = `<img src="${options.iconUrl}" class="taskbar-tab-icon">`;
+        }
+        taskbarTab.innerHTML += `<span>${options.title}</span>`;
+        taskbarWindows.appendChild(taskbarTab);
+        win.taskbarTab = taskbarTab;
 
         // 드래그 기능
-        let isDragging = false;
-        let dragOffsetX, dragOffsetY;
+        let isDragging = false, dragOffsetX, dragOffsetY;
         titleBar.addEventListener('mousedown', (e) => {
             if (isMaximized || e.target.closest('.title-bar-controls')) return;
             isDragging = true;
@@ -224,8 +219,8 @@ win.taskbarTab = taskbarTab;
         });
         const onDrag = (e) => { if (isDragging) { win.style.left = `${e.clientX - dragOffsetX}px`; win.style.top = `${e.clientY - dragOffsetY}px`; } };
         const onStopDrag = () => { isDragging = false; document.removeEventListener('mousemove', onDrag); };
-        
-        // 크기 조절 기능 (성능 최적화 포함)
+
+        // 크기 조절 기능
         win.querySelectorAll('.resizer').forEach(resizer => {
             resizer.addEventListener('mousedown', (e) => {
                 if (isMaximized) return;
@@ -233,33 +228,15 @@ win.taskbarTab = taskbarTab;
                 let startX = e.clientX, startY = e.clientY;
                 let startWidth = win.offsetWidth, startHeight = win.offsetHeight;
                 let startLeft = win.offsetLeft, startTop = win.offsetTop;
-                let lastMouseEvent = e;
-                let animationFrameId = null;
-                
-                bringToFront(win);
-                resizer.classList.add('is-resizing');
-
-                const updateSize = () => {
-                    const dx = lastMouseEvent.clientX - startX, dy = lastMouseEvent.clientY - startY;
+                const onResize = (e) => {
+                    const dx = e.clientX - startX, dy = e.clientY - startY;
                     if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) win.style.width = `${startWidth + dx}px`;
                     if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) win.style.height = `${startHeight + dy}px`;
                     if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) { win.style.width = `${startWidth - dx}px`; win.style.left = `${startLeft + dx}px`; }
                     if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) { win.style.height = `${startHeight - dy}px`; win.style.top = `${startTop + dy}px`; }
-                    animationFrameId = null;
-                };
-                const onResize = (e) => {
-                    lastMouseEvent = e;
-                    if (animationFrameId === null) {
-                        animationFrameId = requestAnimationFrame(updateSize);
-                    }
-                };
-                const onStopResize = () => {
-                    resizer.classList.remove('is-resizing');
-                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                    document.removeEventListener('mousemove', onResize);
                 };
                 document.addEventListener('mousemove', onResize);
-                document.addEventListener('mouseup', onStopResize, { once: true });
+                document.addEventListener('mouseup', () => document.removeEventListener('mousemove', onResize), { once: true });
             });
         });
 
@@ -267,7 +244,8 @@ win.taskbarTab = taskbarTab;
         closeButton.addEventListener('click', () => { win.remove(); taskbarTab.remove(); });
         maximizeButton.addEventListener('click', () => {
             if (!isMaximized) originalState = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
-            isMaximized = !isMaximized; win.classList.toggle('maximized', isMaximized);
+            isMaximized = !isMaximized;
+            win.classList.toggle('maximized', isMaximized);
             if (!isMaximized) Object.assign(win.style, originalState);
             maximizeButton.setAttribute('aria-label', isMaximized ? 'Restore' : 'Maximize');
         });
@@ -278,31 +256,32 @@ win.taskbarTab = taskbarTab;
             const isMinimized = win.classList.contains('minimized');
             const isAlreadyActive = win.style.zIndex == highestZIndex && !isMinimized;
             if (isAlreadyActive) {
-                win.classList.add('minimized'); taskbarTab.classList.remove('active');
+                win.classList.add('minimized');
+                taskbarTab.classList.remove('active');
             } else {
-                win.classList.remove('minimized'); bringToFront(win);
+                win.classList.remove('minimized');
+                bringToFront(win);
             }
         });
 
-        // 창 활성화 기능
         win.addEventListener('mousedown', () => bringToFront(win), true);
-        
-        bringToFront(win); // 생성 시 맨 앞으로 가져오기
+        bringToFront(win);
     }
 
     /* ==========================================================================
-       4. 데스크톱 아이콘 및 이벤트
-       ========================================================================== */
+       4. 데스크톱 아이콘 이벤트
+    ========================================================================== */
     desktopIcons.forEach(icon => {
         let clickTimer = null;
         icon.addEventListener('click', function(e) {
             e.preventDefault();
-            if (clickTimer) {
-                clearTimeout(clickTimer); clickTimer = null;
+            if (clickTimer) { // 더블클릭
+                clearTimeout(clickTimer);
+                clickTimer = null;
                 if (this.dataset.openMode === 'window') {
-                    createWindow({ title: this.dataset.title || '새 창', iframeSrc: this.href, iconUrl: this.dataset.iconUrl });
-                } else if (this.href && this.href.slice(-1) !== "#") { window.open(this.href, '_blank'); }
-            } else {
+                    createWindow({ title: this.dataset.title, iframeSrc: this.href, iconUrl: this.dataset.iconUrl });
+                }
+            } else { // 싱글클릭
                 clickTimer = setTimeout(() => {
                     clickTimer = null;
                     desktopIcons.forEach(otherIcon => otherIcon.classList.remove('selected'));
@@ -312,159 +291,146 @@ win.taskbarTab = taskbarTab;
         });
     });
 
-    document.body.addEventListener('click', (e) => {
-        if (!e.target.closest('.desktop-icon') && !e.target.closest('.window') && !e.target.closest('.start-menu')) {
-            desktopIcons.forEach(icon => icon.classList.remove('selected'));
-        }
-    });
+    /* ==========================================================================
+           4-1. 바탕화면 드래그 선택 기능
+        ========================================================================== */
+        let isDragSelecting = false;
+        let selectionRectangle = null;
+        let startX = 0, startY = 0;
 
-    // --- 드래그 선택 기능 ---
-    // (이전 답변에서 제공한 코드는 여기에 포함됩니다. 필요시 주석 해제)
+        desktopArea.addEventListener('mousedown', (e) => {
+            // 아이콘, 창, 작업표시줄, 시작메뉴 위에서 시작되면 기능 비활성화
+            if (e.target.closest('.desktop-icon') || e.target.closest('.window') || e.target.closest('.taskbar') || e.target.closest('.start-menu')) {
+                return;
+            }
+            
+            isDragSelecting = true;
+            
+            // #desktop-area 내부에서의 상대적인 마우스 위치 계산
+            const rect = desktopArea.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
 
-/* ==========================================================================
-       5. 시작 메뉴 기능
-       ========================================================================== */
-    const startMenuLeft = document.getElementById('startMenuLeft');
-    const startMenuRight = document.getElementById('startMenuRight');
+            // 선택 사각형 div 생성 및 초기화
+            selectionRectangle = document.createElement('div');
+            selectionRectangle.className = 'selection-rectangle';
+            selectionRectangle.style.left = `${startX}px`;
+            selectionRectangle.style.top = `${startY}px`;
+            selectionRectangle.style.width = '0px';
+            selectionRectangle.style.height = '0px';
+            desktopArea.appendChild(selectionRectangle);
 
-const appLinks = [
-    // --- 왼쪽 열 ---
-    { name: 'Internet', sub: 'Internet Explorer', icon: './image/explore.png', type: 'main', url: 'https://www.google.com' },
-    { name: 'E-mail', sub: 'Outlook Express', icon: './image/messenger.png', type: 'main' },
-    { separator: true, type: 'left' },
-    { name: '그림판', icon: './image/mspaint.png', type: 'recent', url: './jspaint/index.html' },
-    { name: '문서편집기', icon: './image/texteditor.png', type: 'recent', url: './texteditor.html' },
-    { name: '미디어 플레이어', icon: './image/mediaplayer.png', type: 'recent', url: './webamp/index.html' },
-    { name: '공쏘기 게임', icon: './image/pinball.png', type: 'recent', url: './ballgame.html' },
-    { separator: true, type: 'left' },
-    { name: '모든 프로그램', icon: './image/allprogram.png', type: 'all' },
+            // 문서 전체에 이벤트 리스너를 추가하여 드래그가 끊기지 않게 함
+            document.addEventListener('mousemove', onDragSelect);
+            document.addEventListener('mouseup', onStopDragSelect, { once: true });
+        });
 
-    // --- 오른쪽 열 ---
-    { name: '내 문서', icon: './image/docfolder.png', type: 'my', url: './folder.html' },
-    { name: '내 최근 문서', icon: './image/recentfolder.png', type: 'my' },
-    { name: '내 그림', icon: './image/photofolder.png', type: 'my' },
-    { name: '내 음악', icon: './image/musicfolder.png', type: 'my' },
-    { name: '내 컴퓨터', icon: './image/mycomputer.png', type: 'my' },
-    { separator: true, type: 'right' },
-    { name: '제어판', icon: './image/panel.png', type: 'settings' },
-    { name: '프린터 및 팩스', icon: './image/printer.png', type: 'settings' },
-    { separator: true, type: 'right' },
-    { name: '도움말 및 지원', icon: './image/info.png', type: 'support' },
-    { name: '검색', icon: './image/search.png', type: 'support' },
-    { name: '실행...', icon: './image/execute.png', type: 'support' },
-];
+        function onDragSelect(e) {
+            if (!isDragSelecting) return;
 
-function createMenuItem(linkData, isMain = false) {
-    const linkElement = document.createElement('a');
-    linkElement.classList.add('start-menu-item');
-    linkElement.href = linkData.url || '#'; // 링크 정보는 유지
+            const rect = desktopArea.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            // 사각형의 너비와 높이, 그리고 시작 위치 계산
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            const newLeft = Math.min(startX, currentX);
+            const newTop = Math.min(startY, currentY);
 
-    const iconElement = document.createElement('img');
-    iconElement.src = linkData.icon || './image/default-icon.png';
-    
-    const textWrapper = document.createElement('div');
-    textWrapper.className = 'text-wrapper';
-    
-    const textElement = document.createElement('span');
-    textElement.textContent = linkData.name;
-    if (isMain) {
-        textElement.style.fontWeight = 'bold';
-    }
-    
-    textWrapper.appendChild(textElement);
-
-    if (linkData.sub) {
-        const subText = document.createElement('small');
-        subText.textContent = linkData.sub;
-        textWrapper.appendChild(subText);
-    }
-
-    linkElement.appendChild(iconElement);
-    linkElement.appendChild(textWrapper);
-
-    // ▼▼▼ 클릭 이벤트 리스너를 여기에 추가합니다 ▼▼▼
-    linkElement.addEventListener('click', (e) => {
-        e.preventDefault(); // 링크의 기본 동작(페이지 이동)을 막습니다.
-        
-        // 유효한 URL이 있는 항목만 창으로 엽니다.
-        if (linkData.url && linkData.url !== '#') {
-            createWindow({
-                title: linkData.name,
-                iframeSrc: linkData.url,
-                iconUrl: linkData.icon
-            });
-            // 메뉴를 클릭했으니 시작 메뉴를 닫습니다.
-            startMenu.classList.remove('show');
+            // 사각형 스타일 실시간 업데이트
+            selectionRectangle.style.left = `${newLeft}px`;
+            selectionRectangle.style.top = `${newTop}px`;
+            selectionRectangle.style.width = `${width}px`;
+            selectionRectangle.style.height = `${height}px`;
         }
 
-        // '모든 프로그램'과 같이 특별한 동작이 필요한 경우
-        if (linkData.type === 'all') {
-            alert('모든 프로그램 기능은 아직 구현되지 않았습니다.');
+        function onStopDragSelect() {
+            isDragSelecting = false;
+            if (selectionRectangle) {
+                selectionRectangle.remove(); // 드래그가 끝나면 사각형 제거
+            }
+            document.removeEventListener('mousemove', onDragSelect);
         }
-    });
-
-    return linkElement;
-}
-
-    function createSeparator() {
-        const separator = document.createElement('div');
-        separator.classList.add('start-menu-separator');
-        return separator;
-    }
-
-function renderStartMenu() {
-    startMenuLeft.innerHTML = '';
-    startMenuRight.innerHTML = '';
-
-    // --- 왼쪽 열 ---
-    // 인터넷, 이메일 등 주요 프로그램 (type: 'main' 또는 'internet')
-    appLinks.filter(link => link.type === 'main' || link.type === 'internet').forEach(link => startMenuLeft.appendChild(createMenuItem(link, true)));
-    startMenuLeft.appendChild(createSeparator());
-
-    // ▼▼▼ 이 부분이 새로 추가되었습니다 ▼▼▼
-    // 최근에 사용한 프로그램 (type: 'recent')
-    appLinks.filter(link => link.type === 'recent').forEach(link => startMenuLeft.appendChild(createMenuItem(link, false)));
-    // ▲▲▲ 여기까지 추가 ▲▲▲
-
-    startMenuLeft.appendChild(createSeparator());
-    startMenuLeft.appendChild(createMenuItem({ name: '모든 프로그램', icon: './image/allprogram.png', url: '#', type: 'all' }, true));
-
-    // --- 오른쪽 열 ---
-    appLinks.filter(link => link.type === 'my').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-    startMenuRight.appendChild(createSeparator());
-    appLinks.filter(link => link.type === 'settings').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-    startMenuRight.appendChild(createSeparator());
-    appLinks.filter(link => link.type === 'support').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
-}
-
-    startButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        startMenu.classList.toggle('show');
-    });
-    
-    // 이 부분은 이미 상단에 document.addEventListener('click', ...) 으로 통합되어 있으므로,
-    // 중복을 피하기 위해 여기서는 제거하거나 주석 처리하는 것이 좋습니다.
-    // document.addEventListener('click', (e) => {
-    //     if (!startMenu.contains(e.target) && !startButton.contains(e.target)) {
-    //         startMenu.classList.remove('show');
-    //     }
-    // });
-    
-    renderStartMenu(); // 메뉴 아이템을 실제로 그리는 함수 호출
-    
-    // --- 초기화 실행 ---
-    updateClock();
-    setInterval(updateClock, 1000);
-    renderStartMenu(); // 시작 메뉴 내용 생성
-
-
 
     /* ==========================================================================
-       6. 컨텍스트 메뉴 (오른쪽 클릭 메뉴) 기능
-       ========================================================================== */
-    let currentContextMenu = null;
+       5. 시작 메뉴 기능
+    ========================================================================== */
+    const startMenuLeft = document.getElementById('startMenuLeft');
+    const startMenuRight = document.getElementById('startMenuRight');
+    const appLinks = [
+        // 왼쪽 열
+        { name: 'Internet', sub: 'Internet Explorer', icon: './image/explore.png', type: 'main', url: 'https://www.google.com' },
+        { name: 'E-mail', sub: 'Outlook Express', icon: './image/messenger.png', type: 'main' },
+        { separator: true, type: 'left' },
+        { name: '그림판', icon: './image/mspaint.png', type: 'recent', url: './jspaint/index.html' },
+        { name: '문서편집기', icon: './image/texteditor.png', type: 'recent', url: './texteditor.html' },
+        { name: '미디어 플레이어', icon: './image/mediaplayer.png', type: 'recent', url: './webamp/index.html' },
+        { separator: true, type: 'left' },
+        { name: '모든 프로그램', icon: './image/allprogram.png', type: 'all' },
+        // 오른쪽 열
+        { name: '내 문서', icon: './image/docfolder.png', type: 'my', url: './folder.html' },
+        { name: '내 최근 문서', icon: './image/recentfolder.png', type: 'my' },
+        { name: '내 컴퓨터', icon: './image/mycomputer.png', type: 'my' },
+        { separator: true, type: 'right' },
+        { name: '제어판', icon: './image/panel.png', type: 'settings' },
+        { separator: true, type: 'right' },
+        { name: '도움말 및 지원', icon: './image/info.png', type: 'support' },
+        { name: '검색', icon: './image/search.png', type: 'support' },
+        { name: '실행...', icon: './image/execute.png', type: 'support' },
+    ];
 
-    // 기존 컨텍스트 메뉴를 제거하는 함수
+    function createMenuItem(linkData, isMain = false) {
+        if (linkData.separator) {
+            const separator = document.createElement('div');
+            separator.className = 'start-menu-separator';
+            return separator;
+        }
+        const linkElement = document.createElement('a');
+        linkElement.className = 'start-menu-item';
+        linkElement.href = linkData.url || '#';
+        const iconElement = document.createElement('img');
+        iconElement.src = linkData.icon || './image/default-icon.png';
+        const textWrapper = document.createElement('div');
+        textWrapper.className = 'text-wrapper';
+        const textElement = document.createElement('span');
+        textElement.textContent = linkData.name;
+        if (isMain) textElement.style.fontWeight = 'bold';
+        textWrapper.appendChild(textElement);
+        if (linkData.sub) {
+            const subText = document.createElement('small');
+            subText.textContent = linkData.sub;
+            textWrapper.appendChild(subText);
+        }
+        linkElement.appendChild(iconElement);
+        linkElement.appendChild(textWrapper);
+        linkElement.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (linkData.url && linkData.url !== '#') {
+                createWindow({ title: linkData.name, iframeSrc: linkData.url, iconUrl: linkData.icon });
+                startMenu.classList.remove('show');
+            }
+            if (linkData.type === 'all') alert('모든 프로그램 기능은 아직 구현되지 않았습니다.');
+        });
+        return linkElement;
+    }
+
+    function renderStartMenu() {
+        startMenuLeft.innerHTML = '';
+        startMenuRight.innerHTML = '';
+        appLinks.filter(link => link.type === 'main' || link.type === 'internet').forEach(link => startMenuLeft.appendChild(createMenuItem(link, true)));
+        startMenuLeft.appendChild(createMenuItem({ separator: true }));
+        appLinks.filter(link => link.type === 'recent').forEach(link => startMenuLeft.appendChild(createMenuItem(link, false)));
+        startMenuLeft.appendChild(createMenuItem({ separator: true }));
+        appLinks.filter(link => link.type === 'all').forEach(link => startMenuLeft.appendChild(createMenuItem(link, true)));
+        appLinks.filter(link => link.type === 'my').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+        appLinks.filter(link => link.type === 'settings').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+        appLinks.filter(link => link.type === 'support').forEach(link => startMenuRight.appendChild(createMenuItem(link)));
+    }
+
+    /* ==========================================================================
+       6. 컨텍스트 메뉴 (오른쪽 클릭) 기능
+    ========================================================================== */
     function removeContextMenu() {
         if (currentContextMenu) {
             currentContextMenu.remove();
@@ -472,13 +438,10 @@ function renderStartMenu() {
         }
     }
 
-    // 컨텍스트 메뉴를 생성하고 표시하는 함수
     function createContextMenu(items, x, y) {
-        removeContextMenu(); // 기존 메뉴가 있다면 제거
-
+        removeContextMenu();
         const menu = document.createElement('ul');
         menu.className = 'context-menu';
-        
         items.forEach(item => {
             const li = document.createElement('li');
             if (item.separator) {
@@ -486,103 +449,72 @@ function renderStartMenu() {
             } else {
                 li.className = 'context-menu-item';
                 li.textContent = item.text;
-                if (item.action) {
-                    li.addEventListener('click', item.action);
-                }
+                if (item.action) li.addEventListener('click', item.action);
             }
             menu.appendChild(li);
         });
-
-        // 메뉴가 화면 밖으로 나가지 않도록 위치 조절
         document.body.appendChild(menu);
-        const menuWidth = menu.offsetWidth;
-        const menuHeight = menu.offsetHeight;
-        if (x + menuWidth > window.innerWidth) {
-            x = window.innerWidth - menuWidth;
-        }
-        if (y + menuHeight > window.innerHeight) {
-            y = window.innerHeight - menuHeight;
-        }
+        const menuWidth = menu.offsetWidth, menuHeight = menu.offsetHeight;
+        if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth;
+        if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight;
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
-        
         currentContextMenu = menu;
     }
-    
-    // 바탕화면에 표시될 메뉴 항목들 정의
+
     const desktopMenuItems = [
-        { text: '아이콘 정렬 순서' },
-        { separator: true },
-        { text: '새로 고침', action: () => location.reload() },
-        { separator: true },
-        { text: '새로 만들기' },
-        { separator: true },
+        { text: '아이콘 정렬 순서' }, { separator: true },
+        { text: '새로 고침', action: () => location.reload() }, { separator: true },
+        { text: '새로 만들기' }, { separator: true },
         { text: '속성' }
     ];
 
-    // 바탕화면에 contextmenu(오른쪽 클릭) 이벤트 리스너 추가
-    document.body.addEventListener('contextmenu', (e) => {
-        // 아이콘이나 창 위가 아닌, 바탕화면 빈 곳에서만 실행
+    /* ==========================================================================
+       7. 전역 이벤트 리스너 설정
+    ========================================================================== */
+
+    // 바탕화면 우클릭 이벤트
+    desktopArea.addEventListener('contextmenu', (e) => {
         if (!e.target.closest('.desktop-icon') && !e.target.closest('.window')) {
-            e.preventDefault(); // 브라우저 기본 메뉴 비활성화
+            e.preventDefault();
             createContextMenu(desktopMenuItems, e.clientX, e.clientY);
         }
     });
 
-    // 다른 곳을 클릭하면 컨텍스트 메뉴 닫기
-    document.addEventListener('click', (e) => {
-        if (currentContextMenu && !currentContextMenu.contains(e.target)) {
-            removeContextMenu();
-        }
+    // 시작 버튼 클릭 이벤트
+    startButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startMenu.classList.toggle('show');
     });
-    /* ==========================================================================
-       7. 알림 영역 기능 (볼륨 조절)
-       ========================================================================== */
-    const volumeIconContainer = document.getElementById('volume-icon-container');
-    const volumePopup = volumeIconContainer.querySelector('.volume-popup');
-    const volumeSlider = document.getElementById('volume-slider');
-    const muteCheckbox = document.getElementById('mute-checkbox');
 
-    // 볼륨 아이콘 클릭 시 팝업 토글
+    // 볼륨 아이콘 클릭 이벤트
     volumeIconContainer.addEventListener('click', (e) => {
-        e.stopPropagation(); // 이벤트 버블링 방지
+        e.stopPropagation();
         volumePopup.classList.toggle('show');
     });
+    volumePopup.addEventListener('click', (e) => e.stopPropagation());
 
-    // 볼륨 슬라이더나 체크박스 클릭 시 팝업이 닫히지 않도록 함
-    volumePopup.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    // 다른 곳을 클릭하면 팝업 닫기
-    // (기존 전역 클릭 리스너에 통합)
+    // 문서 전체 클릭 이벤트 (메뉴 닫기 등)
     document.addEventListener('click', (e) => {
-        // ... (기존 코드: 컨텍스트 메뉴, 시작 메뉴 닫기)
-        
-        // 볼륨 팝업 닫기 로직 추가
+        if (currentContextMenu && !currentContextMenu.contains(e.target)) removeContextMenu();
+        if (startMenu.classList.contains('show') && !startMenu.contains(e.target) && !startButton.contains(e.target)) {
+            startMenu.classList.remove('show');
+        }
         if (volumePopup.classList.contains('show') && !volumeIconContainer.contains(e.target)) {
             volumePopup.classList.remove('show');
         }
+        if (!e.target.closest('.desktop-icon')) {
+            desktopIcons.forEach(icon => icon.classList.remove('selected'));
+        }
     });
 
-    // (예시) 슬라이더 값 변경 시 콘솔에 로그 출력
-    volumeSlider.addEventListener('input', (e) => {
-        console.log('볼륨:', e.target.value);
-        // 실제 오디오 객체가 있다면 여기서 볼륨을 조절합니다.
-        // audio.volume = e.target.value / 100;
-    });
-
-    // (예시) 음소거 체크 시 콘솔에 로그 출력
-    muteCheckbox.addEventListener('change', (e) => {
-        console.log('음소거:', e.target.checked);
-        // audio.muted = e.target.checked;
-    });
+    /* ==========================================================================
+       8. 초기화 실행
+    ========================================================================== */
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderStartMenu();
 });
-
-
-
-
-
 </script>
 
 </body>
