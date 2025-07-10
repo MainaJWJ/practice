@@ -31,135 +31,69 @@
             margin: 0;
             border: none;
             box-shadow: none;
+            background: #f7f6f2; /* 창 배경색 추가 */
         }
     </style>
 </head>
 
 <body>
-<div class="folder-toolbars">
-<div class="menu-bar">
-    <div class="menu-item">
-        <span><u>F</u>ile</span>
-        <ul class="dropdown-menu">
-            <li>Create Shortcut</li>
-            <li>Delete</li>
-            <li>Rename</li>
-            <li>Properties</li>
-            <li class="separator"></li>
-            <li>Close</li>
-        </ul>
-    </div>
-    <div class="menu-item">
-        <span><u>E</u>dit</span>
-        <ul class="dropdown-menu">
-            <li>Undo</li>
-            <li class="separator"></li>
-            <li>Cut</li>
-            <li>Copy</li>
-            <li>Paste</li>
-        </ul>
-    </div>
-    <div class="menu-item">
-        <span><u>V</u>iew</span>
-        <ul class="dropdown-menu">
-            <li>Thumbnails</li>
-            <li>Tiles</li>
-            <li>Icons</li>
-        </ul>
-    </div>
-    <div class="menu-item"><span><u>F</u>avorites</span></div>
-    <div class="menu-item"><span><u>T</u>ools</span></div>
-    <div class="menu-item"><span><u>H</u>elp</span></div>
+<div class="window">
+
+    <div class="folder-toolbars">
+        <div class="menu-bar">
+            <div class="menu-item"><span><u>F</u>ile</span><ul class="dropdown-menu"><li>Create Shortcut</li><li>Delete</li><li>Rename</li><li>Properties</li><li class="separator"></li><li>Close</li></ul></div>
+            <div class="menu-item"><span><u>E</u>dit</span><ul class="dropdown-menu"><li>Undo</li><li class="separator"></li><li>Cut</li><li>Copy</li><li>Paste</li></ul></div>
+            <div class="menu-item"><span><u>V</u>iew</span><ul class="dropdown-menu"><li>Thumbnails</li><li>Tiles</li><li>Icons</li></ul></div>
+            <div class="menu-item"><span><u>F</u>avorites</span></div>
+            <div class="menu-item"><span><u>T</u>ools</span></div>
+            <div class="menu-item"><span><u>H</u>elp</span></div>
+        </div>
+        <div class="standard-buttons-bar">
+            <button class="toolbar-button"><img src="./image/back.png" alt="뒤로"><span>뒤로</span></button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button"><img src="./image/front.png" alt="앞으로"><span>앞으로</span></button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button"><img src="./image/search.png" alt="검색"><span>검색</span></button>
+            <button class="toolbar-button"><img src="./image/folder.png" alt="폴더"><span>폴더</span></button>
+        </div>
+        <div class="address-bar">
+            <label for="address-input">주소</label>
+            <input type="text" id="address-input" value="내 컴퓨터" readonly>
+        </div>
     </div>
 
-
-    <div class="standard-buttons-bar">
-        <button class="toolbar-button">
-            <img src="./image/back.png" alt="뒤로">
-            <span>뒤로</span>
-        </button>
-        <div class="toolbar-separator"></div>
-        <button class="toolbar-button">
-            <img src="./image/search.png" alt="검색">
-            <span>검색</span>
-        </button>
-        <button class="toolbar-button">
-            <img src="./image/folders.png" alt="폴더">
-            <span>폴더</span>
-        </button>
-    </div>
-    <div class="address-bar">
-        <label for="address-input">주소</label>
-        <input type="text" id="address-input" value="내 컴퓨터" readonly>
-    </div>
-</div>
-
-<main class="blog-posts">
-    </main>
-    <div class="window">
-        <div class="window-content-wrapper">
-            <aside class="navigation-pane"> <!-- 폴더 내 좌측 사이드바 관련 -->
-                <div class="sidebar-section"> 
-                    <label><b>파일 및 폴더 작업</b></label>
-                    <ul>
-                        <li><a href="#"><img src="./image/mycomputer.png" class="sidebar-icon" alt="">내 컴퓨터</a></li>
-                        <li><a href="#"><img src="./image/network.png" class="sidebar-icon" alt="">네트워크</a></li>
-                    </ul>
-                </div>
-                <div class="sidebar-section">
-                    <label><b>기타 위치</b></label>
-                    <ul>
-                        <li><a href="#"><img src="./image/folder.png" class="sidebar-icon" alt="">새 폴더</a></li>
-                        <li><a href="./calculator.html"><img src="./image/calculator.png" class="sidebar-icon" alt="">계산기</a></li>
-                    </ul>
-                </div>
-            </aside>
-
-            <div class="main-panel"> <!-- 폴더 내 중앙부분 관련 -->
-                
-                <main class="blog-posts">
-                    <article class="post">
-                        <h1 class="post-title">main 내부에 본문</h1>
-                    </article>
-                    <section class="component-showcase">
-                        <h4>Button (버튼)</h4>
-                        <div class="example-group">
-                            <button>기본 버튼</button>
-                            <button class="active">눌린 버튼 (Active)</button>
-                            <button disabled>비활성 버튼 (Disabled)</button>
-                            <button class="focused">포커스된 버튼 (Focused)</button>
-                        </div>
-                    </section>
-                    <section class="component-showcase">
-                        <br><br><br>
-                        <h4>Checkbox (체크박스)</h4>
-                        <div class="example-group">
-                            <div class="field-row">
-                                <input type="checkbox" id="showcase_check1">
-                                <label for="showcase_check1">일반 체크박스</label>
-                            </div>
-                            <div class="field-row">
-                                <input checked type="checkbox" id="showcase_check2">
-                                <label for="showcase_check2">선택된 체크박스</label>
-                            </div>
-                        </div>
-                    </section>
-                </main>
-
-                <aside class="right-sidebar"> <!-- 폴더 내 우측 사이드바 관련 -->
-                    <fieldset>
-                        <legend>About Me</legend>
-                        <p style="font-size:11px;">aside 내부에 오른쪽 사이드 넣기</p>
-                    </fieldset>
-                </aside>
+    <div class="window-content-wrapper">
+        <aside class="navigation-pane">
+            <div class="sidebar-section">
+                <label><b>파일 및 폴더 작업</b></label>
+                <ul>
+                    <li><a href="#"><img src="./image/mycomputer.png" class="sidebar-icon" alt="">내 컴퓨터</a></li>
+                    <li><a href="#"><img src="./image/network.png" class="sidebar-icon" alt="">네트워크</a></li>
+                </ul>
             </div>
+            <div class="sidebar-section">
+                <label><b>기타 위치</b></label>
+                <ul>
+                    <li><a href="#"><img src="./image/folder.png" class="sidebar-icon" alt="">새 폴더</a></li>
+                    <li><a href="./calculator.html"><img src="./image/calculator.png" class="sidebar-icon" alt="">계산기</a></li>
+                </ul>
+            </div>
+        </aside>
+        <div class="main-panel">
+            <main class="blog-posts">
+                <article class="post"><h1 class="post-title">main 내부에 본문</h1></article>
+                </main>
+            <aside class="right-sidebar">
+                <fieldset><legend>About Me</legend><p style="font-size:11px;">aside 내부에 오른쪽 사이드 넣기</p></fieldset>
+            </aside>
         </div>
-
-        <div class="status-bar">
-            <p class="status-bar-field">준비 완료</p>
-        </div>
-
     </div>
+
+    <div class="status-bar">
+        <p class="status-bar-field">준비 완료</p>
+    </div>
+
+</div>
 
     <script>
         const tabs = document.querySelectorAll("menu[role=tablist]");

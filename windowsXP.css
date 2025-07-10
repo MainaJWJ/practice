@@ -398,7 +398,7 @@
     	font-size: 11px;
     	box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, inset -2px -2px grey, inset 2px 2px #fff;
     	background: #f7f6f2; /*폴더 내 배경색 지정*/
-    	padding: 3px
+    	padding: 3px;
     }
 
     .window fieldset {
@@ -411,7 +411,7 @@
     	padding: 3px 2px 3px 3px;
     	display: flex;
     	justify-content: space-between;
-    	align-items: center
+    	align-items: center;
     }
 
     .title-bar-text {
@@ -443,7 +443,8 @@
     .status-bar {
     	margin: 0 1px;
     	display: flex;
-    	gap: 1px
+    	gap: 1px;
+		height: 22px;
     }
 
     .status-bar-field {
@@ -1219,4 +1220,12 @@
     	animation: sliding 2s linear 0s infinite;
     	background: repeating-linear-gradient(90deg, transparent 0, transparent 8px, #fff 0, #fff 10px, transparent 0, transparent 18px, #fff 0, #fff 20px, transparent 0, transparent 28px, #fff 0, #fff), linear-gradient(180deg, #acedad 0, #7be47d 14%, #4cda50 28%, #2ed330 42%, #42d845 57%, #76e275 71%, #8fe791 85%, #fff)
     }
+
+	/* ==========================================================================
+   상태 표시줄 스타일 고정
+   ========================================================================== */
+
+.status-bar {
+    height: 18px;           /* 상태 표시줄의 높이를 22px로 고정 */
+}
 

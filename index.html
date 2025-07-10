@@ -206,39 +206,70 @@ document.addEventListener('DOMContentLoaded', () => {
         taskbarWindows.appendChild(taskbarTab);
         win.taskbarTab = taskbarTab;
 
-        // 드래그 기능
-        let isDragging = false, dragOffsetX, dragOffsetY;
-        titleBar.addEventListener('mousedown', (e) => {
-            if (isMaximized || e.target.closest('.title-bar-controls')) return;
-            isDragging = true;
-            dragOffsetX = e.clientX - win.offsetLeft;
-            dragOffsetY = e.clientY - win.offsetTop;
-            bringToFront(win);
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', onStopDrag, { once: true });
-        });
-        const onDrag = (e) => { if (isDragging) { win.style.left = `${e.clientX - dragOffsetX}px`; win.style.top = `${e.clientY - dragOffsetY}px`; } };
-        const onStopDrag = () => { isDragging = false; document.removeEventListener('mousemove', onDrag); };
+// --- 드래그 기능 (오버레이 방식) ---
+let isDragging = false;
+let dragOffsetX, dragOffsetY;
 
-        // 크기 조절 기능
-        win.querySelectorAll('.resizer').forEach(resizer => {
-            resizer.addEventListener('mousedown', (e) => {
-                if (isMaximized) return;
-                e.preventDefault();
-                let startX = e.clientX, startY = e.clientY;
-                let startWidth = win.offsetWidth, startHeight = win.offsetHeight;
-                let startLeft = win.offsetLeft, startTop = win.offsetTop;
-                const onResize = (e) => {
-                    const dx = e.clientX - startX, dy = e.clientY - startY;
-                    if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) win.style.width = `${startWidth + dx}px`;
-                    if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) win.style.height = `${startHeight + dy}px`;
-                    if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) { win.style.width = `${startWidth - dx}px`; win.style.left = `${startLeft + dx}px`; }
-                    if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) { win.style.height = `${startHeight - dy}px`; win.style.top = `${startTop + dy}px`; }
-                };
-                document.addEventListener('mousemove', onResize);
-                document.addEventListener('mouseup', () => document.removeEventListener('mousemove', onResize), { once: true });
-            });
-        });
+titleBar.addEventListener('mousedown', (e) => {
+    if (isMaximized || e.target.closest('.title-bar-controls')) return;
+
+    isDragging = true;
+    dragOffsetX = e.clientX - win.offsetLeft;
+    dragOffsetY = e.clientY - win.offsetTop;
+    bringToFront(win);
+
+    // 화면 전체를 덮는 투명 오버레이 생성
+    const overlay = document.createElement('div');
+    overlay.className = 'drag-overlay';
+    document.body.appendChild(overlay);
+
+    const onDrag = (e) => {
+        if (!isDragging) return;
+        win.style.left = `${e.clientX - dragOffsetX}px`;
+        win.style.top = `${e.clientY - dragOffsetY}px`;
+    };
+
+    const onStopDrag = () => {
+        isDragging = false;
+        document.body.removeChild(overlay); // 드래그가 끝나면 오버레이 제거
+    };
+    
+    // 이제 마우스 이벤트는 오버레이 위에서 감지
+    overlay.addEventListener('mousemove', onDrag);
+    overlay.addEventListener('mouseup', onStopDrag, { once: true });
+});
+
+// 크기 조절 기능 (is-resizing 클래스 토글 기능 추가)
+win.querySelectorAll('.resizer').forEach(resizer => {
+    resizer.addEventListener('mousedown', (e) => {
+        if (isMaximized) return;
+        e.preventDefault();
+        
+        // ▼▼▼ 클릭 시작 시 'is-resizing' 클래스 추가 ▼▼▼
+        resizer.classList.add('is-resizing');
+
+        let startX = e.clientX, startY = e.clientY;
+        let startWidth = win.offsetWidth, startHeight = win.offsetHeight;
+        let startLeft = win.offsetLeft, startTop = win.offsetTop;
+        
+        const onResize = (e) => {
+            const dx = e.clientX - startX, dy = e.clientY - startY;
+            if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) win.style.width = `${startWidth + dx}px`;
+            if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) win.style.height = `${startHeight + dy}px`;
+            if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) { win.style.width = `${startWidth - dx}px`; win.style.left = `${startLeft + dx}px`; }
+            if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) { win.style.height = `${startHeight - dy}px`; win.style.top = `${startTop + dy}px`; }
+        };
+        
+        const onStopResize = () => {
+            // ▼▼▼ 클릭 종료 시 'is-resizing' 클래스 제거 ▼▼▼
+            resizer.classList.remove('is-resizing');
+            document.removeEventListener('mousemove', onResize);
+        };
+
+        document.addEventListener('mousemove', onResize);
+        document.addEventListener('mouseup', onStopResize, { once: true });
+    });
+});
 
         // 컨트롤 버튼 기능
         closeButton.addEventListener('click', () => { win.remove(); taskbarTab.remove(); });
