@@ -11,6 +11,8 @@
     <link rel="icon" href="./image/windowslogo.png">
     <!-- Webamp 라이브러리 추가 -->
     <script src="https://unpkg.com/webamp/built/webamp.bundle.min.js"></script>
+    <!-- Webamp 관리자 스크립트 추가 -->
+    <script src="webamp/webamp-manager.js"></script>
 </head>
 
 <body>
@@ -158,6 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function bringToFront(windowEl) {
         highestZIndex++;
         windowEl.style.zIndex = highestZIndex;
+        
+        // Webamp 매니저의 z-index도 동기화
+        if (window.webampManager) {
+            window.webampManager.updateZIndex(highestZIndex);
+        }
+        
         document.querySelectorAll('.taskbar-tab').forEach(tab => tab.classList.remove('active'));
         if (windowEl.taskbarTab) {
             windowEl.taskbarTab.classList.add('active');
@@ -600,121 +608,6 @@ muteCheckbox.addEventListener('change', (e) => {
         }
     });
 });
-
-// Webamp 창 생성 함수
-function createWebampWindow() {
-    // 이미 Webamp 창이 열려있으면 포커스만
-    if (window._webampWindow && document.body.contains(window._webampWindow)) {
-        window._webampWindow.style.zIndex = ++highestZIndex;
-        return;
-    }
-    // 창 엘리먼트 생성
-    const windowEl = document.createElement('div');
-    windowEl.className = 'window';
-    windowEl.style.cssText = `width: 380px; height: 420px; position: absolute; top: 60px; left: 300px; display: flex; flex-direction: column; padding: 3px; z-index: ${++highestZIndex};`;
-    windowEl.innerHTML = `
-        <div class="title-bar"><div class="title-bar-text"><img src="./image/mediaplayer.png" class="title-bar-icon" alt="">Webamp</div><div class="title-bar-controls"><button aria-label="Minimize"></button><button aria-label="Maximize"></button><button aria-label="Close"></button></div></div>
-        <div class="window-body" style="flex-grow: 1; padding: 0; margin: 0; min-height: 0; position: relative;"></div>
-        <div class="resizer top-left"></div><div class="resizer top-right"></div><div class="resizer bottom-left"></div><div class="resizer bottom-right"></div>
-        <div class="resizer top"></div><div class="resizer right"></div><div class="resizer bottom"></div><div class="resizer left"></div>
-    `;
-    document.body.appendChild(windowEl);
-    // 창 상호작용(드래그, 최소화 등) 기존 함수 재사용
-    makeWindowInteractive(windowEl, { title: 'Webamp', iconUrl: './image/mediaplayer.png' });
-    // Webamp 인스턴스 생성 및 렌더링
-    const webampDiv = windowEl.querySelector('.window-body');
-    window._webampInstance = new window.Webamp({
-        initialTracks: [
-            {
-                metaData: { artist: "Sample", title: "Canon" },
-                url: "./webamp/canon.mp3"
-            }
-        ]
-    });
-    window._webampInstance.renderWhenReady(webampDiv);
-    // 창 닫기 시 Webamp 인스턴스 제거
-    const closeBtn = windowEl.querySelector('button[aria-label="Close"]');
-    closeBtn.addEventListener('click', () => {
-        if (window._webampInstance) {
-            window._webampInstance.dispose();
-            window._webampInstance = null;
-        }
-        window._webampWindow = null;
-    });
-    window._webampWindow = windowEl;
-}
-
-// Webamp 아이콘 더블클릭 이벤트 연결 (Webamp를 #desktop-area에만 렌더링)
-setTimeout(() => {
-    const webampIcon = document.getElementById('webamp-icon');
-    if (webampIcon) {
-        let clickTimer = null;
-        webampIcon.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-                clickTimer = null;
-                if (window._webampInstance) return;
-                const webampContainer = document.getElementById('webamp-container');
-                // 작업표시줄에 Webamp 탭 생성
-                const taskbarWindows = document.querySelector('.taskbar-windows');
-                const webampTab = document.createElement('button');
-                webampTab.className = 'taskbar-tab';
-                webampTab.innerHTML = '<img src="./image/mediaplayer.png" class="taskbar-tab-icon"><span>Webamp</span>';
-                taskbarWindows.appendChild(webampTab);
-                // Webamp 컨테이너 스타일 초기화
-                webampContainer.style.display = '';
-                webampContainer.style.zIndex = ++highestZIndex;
-                // Webamp 인스턴스 생성 및 렌더링
-                window._webampInstance = new window.Webamp({
-                    initialTracks: [
-                        {
-                            metaData: { artist: "Sample", title: "Canon" },
-                            url: "./webamp/canon.mp3"
-                        }
-                    ]
-                });
-                window._webampInstance.renderWhenReady(webampContainer);
-                // 탭 클릭 시 show/hide 및 z-index 조정
-                webampTab.addEventListener('click', () => {
-                    const isHidden = webampContainer.style.display === 'none';
-                    const currentZ = parseInt(webampContainer.style.zIndex) || 0;
-                    if (isHidden) {
-                        // 복원 + 최상위
-                        webampContainer.style.display = '';
-                        webampContainer.style.zIndex = ++highestZIndex;
-                        webampTab.classList.add('active');
-                    } else if (currentZ === highestZIndex) {
-                        // 이미 최상위면 최소화
-                        webampContainer.style.display = 'none';
-                        webampTab.classList.remove('active');
-                    } else {
-                        // 보이지만 최상위가 아니면 z-index만 올림
-                        webampContainer.style.zIndex = ++highestZIndex;
-                        webampTab.classList.add('active');
-                    }
-                });
-                // Webamp 컨테이너 클릭 시 항상 최상위로
-                webampContainer.addEventListener('mousedown', () => {
-                    if (webampContainer.style.display !== 'none') {
-                        webampContainer.style.zIndex = ++highestZIndex;
-                        webampTab.classList.add('active');
-                    }
-                });
-                // Webamp 닫힐 때 탭 제거
-                window._webampInstance.onClose(() => {
-                    window._webampInstance = null;
-                    webampContainer.innerHTML = '';
-                    webampTab.remove();
-                });
-                // Webamp 실행 시 탭 활성화
-                webampTab.classList.add('active');
-            } else {
-                clickTimer = setTimeout(() => { clickTimer = null; }, 200);
-            }
-        });
-    }
-}, 100);
 
 </script>
 
