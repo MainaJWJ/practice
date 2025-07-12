@@ -66,7 +66,14 @@ class WebampManager {
         console.log('Webamp tracks:', tracks);
         
         this.webampInstance = new window.Webamp({
-            initialTracks: tracks
+            initialTracks: tracks,
+            // 98.js.org 방식: 시작할 때 Milkdrop 창도 함께 열기
+            initialWindowLayout: {
+                main: { position: { x: 0, y: 0 } },
+                equalizer: { position: { x: 0, y: 116 } },
+                playlist: { position: { x: 0, y: 232 }, size: [0, 4] },
+                milkdrop: { position: { x: 275, y: 0 }, size: [1, 1] }
+            }
         });
         
         this.webampInstance.renderWhenReady(this.webampContainer).then(() => {
@@ -175,7 +182,16 @@ function setupWebampIcon() {
     }, 100);
 }
 
+// Webamp 라이브러리가 로드될 때까지 기다린 후 아이콘 설정
+function waitForWebamp() {
+    if (window.Webamp) {
+        setupWebampIcon();
+    } else {
+        setTimeout(waitForWebamp, 100);
+    }
+}
+
 // 페이지 로드 시 Webamp 아이콘 설정
 document.addEventListener('DOMContentLoaded', function() {
-    setupWebampIcon();
+    waitForWebamp();
 }); 

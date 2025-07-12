@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>명령 프롬프트</title>
+    <link rel="stylesheet" href="windowsXP.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: silver;
+            font-family: "Perfect DOS VGA 437 Win", monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            overflow: hidden;
+        }
+        #terminal {
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+            color: silver;
+            padding: 8px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            outline: none;
+            display: flex;
+            flex-direction: column;
+        }
+        #output {
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        #input-line {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        #prompt {
+            color: silver;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
+        #cmdline {
+            background: none;
+            border: none;
+            color: silver;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            width: 100%;
+        }
+        .output-line {
+            width: 100%;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .success {
+            color: #00ff00;
+        }
+        .warning {
+            color: #ffff00;
+        }
+        .file {
+            color: #ffffff;
+        }
+        .directory {
+            color: #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output"></div>
+        <div id="input-line">
+            <span id="prompt">C:\&gt; </span><input id="cmdline" type="text" autocomplete="off" autofocus />
+        </div>
+    </div>
+    <script>
+        const output = document.getElementById('output');
+        const cmdline = document.getElementById('cmdline');
+        const promptSpan = document.getElementById('prompt');
+        let commandHistory = [];
+        let historyIndex = -1;
+        let currentDirectory = 'C:\\';
+        let fileSystem = {
+            'C:\\': {
+                'WINDOWS': { type: 'dir', size: 0 },
+                'Program Files': { type: 'dir', size: 0 },
+                'Documents and Settings': { type: 'dir', size: 0 },
+                'System Volume Information': { type: 'dir', size: 0 },
+                'autoexec.bat': { type: 'file', size: 1024 },
+                'config.sys': { type: 'file', size: 512 },
+                'boot.ini': { type: 'file', size: 256 }
+            },
+            'C:\\WINDOWS': {
+                'system32': { type: 'dir', size: 0 },
+                'fonts': { type: 'dir', size: 0 },
+                'system.ini': { type: 'file', size: 2048 },
+                'win.ini': { type: 'file', size: 1536 }
+            },
+            'C:\\Program Files': {
+                'Internet Explorer': { type: 'dir', size: 0 },
+                'Common Files': { type: 'dir', size: 0 }
+            }
+        };
+        // 명령어 정의 (생략: 기존과 동일, 아래에 붙여넣기)
+        const commands = {
+            'help': () => {
+                return `사용 가능한 명령어:\nhelp - 도움말 표시\ndir - 현재 디렉토리 내용 표시\ncls - 화면 지우기\necho [텍스트] - 텍스트 출력\ndate - 현재 날짜 표시\ntime - 현재 시간 표시\nver - Windows 버전 표시\ncd [경로] - 디렉토리 변경\ntype [파일명] - 파일 내용 보기\ncopy [원본] [대상] - 파일 복사\ndel [파일명] - 파일 삭제\nmkdir [폴더명] - 폴더 생성\nrmdir [폴더명] - 폴더 삭제\nren [원본] [새이름] - 파일/폴더 이름 변경\ncalc - 계산기 실행\nnotepad - 메모장 실행\nping [주소] - 네트워크 연결 테스트\nipconfig - IP 설정 정보 표시\ntree - 디렉토리 트리 구조 표시\ncolor [색상] - 터미널 색상 변경\ntitle [제목] - 터미널 제목 변경\nexit - 터미널 종료\n\n[팁] 바탕화면 또는 시작메뉴에 있는 앱의 이름(한글/영어/대소문자 무관)을 입력하면 해당 앱이 실행됩니다. 예) 포토샵, 그림판, Internet Explore 등`;
+            },
+            'dir': () => {
+                const dir = fileSystem[currentDirectory] || {};
+                let output = ` Volume in drive ${currentDirectory.charAt(0)}: has no label.\n Volume Serial Number is 1234-5678\n\n Directory of ${currentDirectory}\n\n`;
+                const items = Object.entries(dir);
+                let dirCount = 0;
+                let fileCount = 0;
+                let totalSize = 0;
+                items.forEach(([name, info]) => {
+                    if (info.type === 'dir') {
+                        output += `[DIR]          ${name.padEnd(20)} <DIR>\n`;
+                        dirCount++;
+                    } else {
+                        output += `         ${name.padEnd(20)} ${info.size.toString().padStart(10)} bytes\n`;
+                        fileCount++;
+                        totalSize += info.size;
+                    }
+                });
+                output += `\n        ${fileCount} file(s) ${totalSize.toString().padStart(15)} bytes\n`;
+                output += `        ${dirCount} dir(s)   1,234,567,890 bytes free`;
+                return output;
+            },
+            'cls': () => {
+                output.innerHTML = '';
+                return null;
+            },
+            'echo': (args) => args.join(' '),
+            'date': () => {
+                const now = new Date();
+                return `Current Date is ${now.toLocaleDateString()}`;
+            },
+            'time': () => {
+                const now = new Date();
+                return `Current Time is ${now.toLocaleTimeString()}`;
+            },
+            'ver': () => 'Microsoft Windows XP [Version 5.1.2600]',
+            'cd': (args) => {
+                if (args.length === 0) return currentDirectory;
+                const path = args[0];
+                if (path === '..') {
+                    if (currentDirectory !== 'C:\\') {
+                        const parts = currentDirectory.split('\\').filter(p => p);
+                        parts.pop();
+                        currentDirectory = parts.length > 0 ? 'C:\\' + parts.join('\\') + '\\' : 'C:\\';
+                    }
+                } else if (path === '.') {
+                    return currentDirectory;
+                } else {
+                    const newPath = currentDirectory + path + '\\';
+                    if (fileSystem[newPath]) {
+                        currentDirectory = newPath;
+                    } else {
+                        return `The system cannot find the path specified.`;
+                    }
+                }
+                return null;
+            },
+            'type': (args) => {
+                if (args.length === 0) return 'The syntax of the command is incorrect.';
+                const fileName = args[0];
+                if (fileSystem[currentDirectory] && fileSystem[currentDirectory][fileName]) {
+                    const file = fileSystem[currentDirectory][fileName];
+                    if (file.type === 'file') {
+                        return `This is the content of ${fileName}:\n\n[파일 내용이 여기에 표시됩니다]\n파일 크기: ${file.size} bytes`;
+                    } else {
+                        return `The file name, directory name, or volume label syntax is incorrect.`;
+                    }
+                } else {
+                    return `The system cannot find the file specified.`;
+                }
+            },
+            'copy': (args) => {
+                if (args.length < 2) return 'The syntax of the command is incorrect.';
+                return `        1 file(s) copied.`;
+            },
+            'del': (args) => {
+                if (args.length === 0) return 'The syntax of the command is incorrect.';
+                return `C:\\${args[0]}, Delete (Y/N)? Y\n`;
+            },
+            'mkdir': (args) => {
+                if (args.length === 0) return 'The syntax of the command is incorrect.';
+                const dirName = args[0];
+                if (!fileSystem[currentDirectory]) fileSystem[currentDirectory] = {};
+                fileSystem[currentDirectory][dirName] = { type: 'dir', size: 0 };
+                return null;
+            },
+            'rmdir': (args) => {
+                if (args.length === 0) return 'The syntax of the command is incorrect.';
+                return null;
+            },
+            'ren': (args) => {
+                if (args.length < 2) return 'The syntax of the command is incorrect.';
+                return null;
+            },
+            'calc': () => '계산기가 실행되었습니다. (실제로는 계산기 창이 열립니다)',
+            'notepad': () => '메모장이 실행되었습니다. (실제로는 메모장 창이 열립니다)',
+            'ping': (args) => {
+                if (args.length === 0) return 'Usage: ping ... target_name';
+                const target = args[0];
+                return `Pinging ${target} [127.0.0.1] with 32 bytes of data:\n\nReply from 127.0.0.1: bytes=32 time<1ms TTL=128\nReply from 127.0.0.1: bytes=32 time<1ms TTL=128\nReply from 127.0.0.1: bytes=32 time<1ms TTL=128\nReply from 127.0.0.1: bytes=32 time<1ms TTL=128\n\nPing statistics for 127.0.0.1:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\nApproximate round trip times in milli-seconds:\n    Minimum = 0ms, Maximum = 0ms, Average = 0ms`;
+            },
+            'ipconfig': () => `Windows IP Configuration\n\nEthernet adapter Local Area Connection:\n\n   Connection-specific DNS Suffix  . :\n   IP Address. . . . . . . . . . . . : 192.168.1.100\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . . . : 192.168.1.1\n\nPPP adapter Dial-up Connection:\n\n   Media State . . . . . . . . . . . : Media disconnected`,
+            'tree': () => `C:\n├───WINDOWS\n│   ├───system32\n│   └───fonts\n├───Program Files\n│   ├───Internet Explorer\n│   └───Common Files\n└───Documents and Settings`,
+            'color': (args) => {
+                if (args.length === 0) return 'Sets the default console foreground and background colors.';
+                return `Color changed to ${args[0]}`;
+            },
+            'title': (args) => {
+                if (args.length === 0) return 'The syntax of the command is incorrect.';
+                document.title = args.join(' ');
+                return null;
+            },
+            'exit': () => { window.close(); return null; }
+        };
+        function printLine(text, className) {
+            const line = document.createElement('div');
+            line.className = 'output-line' + (className ? ' ' + className : '');
+            line.innerHTML = text.replace(/\n/g, '<br>');
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+        function runCommand(cmd) {
+            printLine(`${currentDirectory}> ${cmd}`);
+            if (!cmd.trim()) return;
+            const parts = cmd.trim().split(' ');
+            const command = parts[0].toLowerCase();
+            const args = parts.slice(1);
+            // 1. 바탕화면/시작메뉴 아이콘 이름과 비교 (한글/영어/대소문자 무관)
+            if (!commands[command]) {
+                // 바탕화면 아이콘 목록을 동적으로 읽어옴
+                const icons = Array.from(window.parent.document.querySelectorAll('.desktop-icon'));
+                // 시작메뉴 앱 목록도 동적으로 읽어옴
+                const startMenuApps = Array.from(window.parent.document.querySelectorAll('.start-menu-item'));
+                // 입력값 전체(공백 포함)를 아이콘/앱 이름과 비교
+                const inputName = cmd.trim().toLowerCase();
+                // 바탕화면
+                let matched = icons.find(icon => {
+                    const iconName = icon.querySelector('span')?.textContent?.trim().toLowerCase();
+                    return iconName === inputName;
+                });
+                // 시작메뉴
+                if (!matched) {
+                    matched = startMenuApps.find(app => {
+                        const appName = app.querySelector('span')?.textContent?.trim().toLowerCase();
+                        return appName === inputName;
+                    });
+                }
+                if (matched) {
+                    // 아이콘/앱을 클릭한 것과 동일하게 창을 띄움
+                    const title = matched.getAttribute('data-title') || matched.querySelector('span').textContent;
+                    const url = matched.getAttribute('href');
+                    const iconUrl = matched.getAttribute('data-icon-url') || matched.querySelector('img')?.src;
+                    // 부모창의 createWindow 함수 호출 (window.parent)
+                    if (window.parent.createWindow) {
+                        window.parent.createWindow({ title, iframeSrc: url, iconUrl });
+                    } else {
+                        // 메시지 전송 방식도 지원
+                        window.parent.postMessage({ type: 'createWindow', title, iframeSrc: url, iconUrl }, '*');
+                    }
+                    return;
+                }
+            }
+            // 기존 명령어 처리
+            if (commands[command]) {
+                const result = commands[command](args);
+                if (result !== null) {
+                    printLine(result);
+                }
+            } else {
+                printLine(`'${command}'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램, 또는 배치 파일이 아닙니다.`, 'error');
+            }
+        }
+        cmdline.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const value = cmdline.value;
+                commandHistory.push(value);
+                historyIndex = commandHistory.length;
+                runCommand(value);
+                cmdline.value = '';
+                promptSpan.textContent = `${currentDirectory}> `;
+                setTimeout(() => cmdline.focus(), 0);
+            } else if (e.key === 'ArrowUp') {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    cmdline.value = commandHistory[historyIndex];
+                    setTimeout(() => cmdline.setSelectionRange(cmdline.value.length, cmdline.value.length), 0);
+                }
+                e.preventDefault();
+            } else if (e.key === 'ArrowDown') {
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    cmdline.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    cmdline.value = '';
+                }
+                setTimeout(() => cmdline.setSelectionRange(cmdline.value.length, cmdline.value.length), 0);
+                e.preventDefault();
+            }
+        });
+        // 초기 출력
+        printLine('Microsoft Windows XP [Version 5.1.2600]');
+        printLine('(C) Copyright 1985-2001 Microsoft Corp.');
+        printLine('');
+        promptSpan.textContent = `${currentDirectory}> `;
+        setTimeout(() => cmdline.focus(), 0);
+    </script>
+</body>
+</html> 

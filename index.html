@@ -9,8 +9,11 @@
     <link rel="stylesheet" href="windowsXP.css">
     <link rel="stylesheet" href="custom.css">
     <link rel="icon" href="./image/windowslogo.png">
-    <!-- Webamp 라이브러리 추가 -->
-    <script src="https://unpkg.com/webamp/built/webamp.bundle.min.js"></script>
+    <!-- Webamp 라이브러리 추가 (Milkdrop 지원 버전) -->
+    <script type="module">
+        import Webamp from "https://unpkg.com/webamp@0.0.0-next-f432117/butterchurn";
+        window.Webamp = Webamp;
+    </script>
     <!-- Webamp 관리자 스크립트 추가 -->
     <script src="webamp/webamp-manager.js"></script>
 </head>
@@ -58,20 +61,23 @@
         </a>
 
 
+
+
             <a href="./minipaint/index.html" class="desktop-icon" data-title="포토샵"  data-icon-url="./image/paint.png" data-open-mode="window">
                 <img src="./image/paint.png" alt="포토샵">
                 <span>포토샵</span>
             </a>
+        
 
-            <a href="./ballgame.html" class="desktop-icon" data-title="공쏘기"  data-icon-url="./image/shell.png" data-open-mode="window">
-                <img src="./image/shell.png" alt="쉘">
-                <span>공쏘기</span>
-            </a>            
+                    <a href="./textcounter.html" class="desktop-icon" data-title="글자수세기"  data-icon-url="./image/shell.png" data-open-mode="window">
+            <img src="./image/shell.png" alt="쉘">
+            <span>글자수세기</span>
+        </a>     
 
-            <a href="./textcounter.html" class="desktop-icon" data-title="글자수세기"  data-icon-url="./image/shell.png" data-open-mode="window">
-                <img src="./image/shell.png" alt="쉘">
-                <span>글자수세기</span>
-            </a>     
+        <a href="./terminal.html" class="desktop-icon" data-title="명령 프롬프트" data-icon-url="./image/cmd.png" data-open-mode="window">
+            <img src="./image/cmd.png" alt="명령 프롬프트">
+            <span>명령 프롬프트</span>
+        </a>
         </a>
     </div>
 
@@ -600,6 +606,45 @@ muteCheckbox.addEventListener('change', (e) => {
     updateClock();
     setInterval(updateClock, 1000);
     renderStartMenu();
+
+    // startup.wav 페이지 로드 시마다 재생 기능
+    function playStartupSound() {
+        console.log('startup.wav 재생 시도...');
+        console.log('현재 볼륨:', globalVolume);
+        console.log('음소거 상태:', isGlobalMuted);
+        
+        const startupAudio = new Audio('./startup.wav');
+        startupAudio.volume = globalVolume;
+        startupAudio.muted = isGlobalMuted;
+        
+        // 오디오 로드 완료 후 재생
+        startupAudio.addEventListener('canplaythrough', () => {
+            console.log('startup.wav 로드 완료, 재생 시작');
+            startupAudio.play().then(() => {
+                console.log('startup.wav 재생 성공');
+            }).catch(error => {
+                console.log('startup.wav 재생 실패:', error);
+            });
+        });
+        
+        startupAudio.addEventListener('error', (error) => {
+            console.log('startup.wav 로드 실패:', error);
+        });
+        
+        // 오디오 로드 시작
+        startupAudio.load();
+    }
+
+    // 사용자 상호작용 후 startup.wav 재생
+    let startupSoundPlayed = false;
+    
+    // 사용자가 페이지를 클릭했을 때 startup.wav 재생
+    document.addEventListener('click', () => {
+        if (!startupSoundPlayed) {
+            playStartupSound();
+            startupSoundPlayed = true;
+        }
+    }, { once: true });
 
     // 폴더 창에서 전송된 메시지 처리
     window.addEventListener('message', (event) => {
