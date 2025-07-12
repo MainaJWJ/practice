@@ -490,7 +490,9 @@ button.start-button:focus {
 
 /* 창이 '최소화'되었을 때 창을 숨기는 스타일 */
 .window.minimized {
-    display: none;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 /* 작업표시줄에 표시될 창 탭 버튼 스타일 */

@@ -142,6 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let highestZIndex = 100;
     let currentContextMenu = null;
+    let globalVolume = 0.75; // 기본 볼륨 (0.0 ~ 1.0)
+    let isGlobalMuted = false; // 기본 음소거 상태
 
     /* ==========================================================================
        2. 핵심 기능 함수 (창 관리, 시계 등)
@@ -152,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         highestZIndex++;
         windowEl.style.zIndex = highestZIndex;
         document.querySelectorAll('.taskbar-tab').forEach(tab => tab.classList.remove('active'));
-        if (windowEl.taskbarTab && !windowEl.classList.contains('minimized')) {
+        if (windowEl.taskbarTab) {
             windowEl.taskbarTab.classList.add('active');
         }
     }
@@ -167,7 +169,21 @@ document.addEventListener('DOMContentLoaded', () => {
         minutes = String(minutes).padStart(2, '0');
         if (clockElement) clockElement.textContent = `${ampm} ${hours}:${minutes}`;
     }
-
+// ▼▼▼ 2. 이 함수를 새로 추가합니다. ▼▼▼
+// 모든 창의 오디오/비디오에 현재 볼륨/음소거 상태를 적용하는 함수
+function applyGlobalAudioState() {
+    document.querySelectorAll('iframe').forEach(iframe => {
+        try {
+            const mediaElements = iframe.contentWindow.document.querySelectorAll('audio, video');
+            mediaElements.forEach(media => {
+                media.volume = globalVolume;
+                media.muted = isGlobalMuted;
+            });
+        } catch (e) {
+            // 외부 사이트(CORS) 등 접근 불가 오류는 무시합니다.
+        }
+    });
+}
     /* ==========================================================================
        3. 창 생성 및 상호작용 관리
     ========================================================================== */
@@ -184,6 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="resizer top-left"></div><div class="resizer top-right"></div><div class="resizer bottom-left"></div><div class="resizer bottom-right"></div>
             <div class="resizer top"></div><div class="resizer right"></div><div class="resizer bottom"></div><div class="resizer left"></div>
         `;
+        // createWindow 함수 내부...
+
+    // ▼▼▼ 3. 이 부분을 추가합니다. ▼▼▼
+    const iframe = windowEl.querySelector('iframe');
+    iframe.addEventListener('load', () => {
+        applyGlobalAudioState();
+    });
+
         document.body.appendChild(windowEl);
         makeWindowInteractive(windowEl, options);
     }
@@ -538,6 +562,24 @@ win.querySelectorAll('.resizer').forEach(resizer => {
             desktopIcons.forEach(icon => icon.classList.remove('selected'));
         }
     });
+
+    /* ==========================================================================
+   7-1. 알림 영역 볼륨 조절 기능 연결 (새로 추가)
+   ========================================================================== */
+
+// 슬라이더 값 변경 시 전역 볼륨 업데이트 및 모든 창에 적용
+volumeSlider.addEventListener('input', (e) => {
+    globalVolume = e.target.value / 100;
+    muteCheckbox.checked = false; // 볼륨 조절 시 음소거 해제
+    isGlobalMuted = false;
+    applyGlobalAudioState();
+});
+
+// 음소거 체크 시 전역 음소거 상태 업데이트 및 모든 창에 적용
+muteCheckbox.addEventListener('change', (e) => {
+    isGlobalMuted = e.target.checked;
+    applyGlobalAudioState();
+});
 
     /* ==========================================================================
        8. 초기화 실행
