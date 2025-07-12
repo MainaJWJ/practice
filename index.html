@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="windowsXP.css">
     <link rel="stylesheet" href="custom.css">
     <link rel="icon" href="./image/windowslogo.png">
+    <!-- Webamp 라이브러리 추가 -->
+    <script src="https://unpkg.com/webamp/built/webamp.bundle.min.js"></script>
 </head>
 
 <body>
@@ -47,10 +49,11 @@
             <span>문서편집기</span>
 
 
-            <a href="./webamp/index.html" class="desktop-icon" data-title="mediaplayer"  data-icon-url="./image/mediaplayer.png" data-open-mode="window">
-                <img src="./image/mediaplayer.png" alt="미디어">
-                <span>미디어</span>
-            </a>
+            <!-- Webamp 아이콘 추가 -->
+        <a href="#" class="desktop-icon" id="webamp-icon" data-title="Webamp" data-icon-url="./image/mediaplayer.png">
+            <img src="./image/mediaplayer.png" alt="Webamp">
+            <span>Webamp</span>
+        </a>
 
 
             <a href="./minipaint/index.html" class="desktop-icon" data-title="포토샵"  data-icon-url="./image/paint.png" data-open-mode="window">
@@ -70,6 +73,8 @@
         </a>
     </div>
 
+    <div id="webamp-container"></div>
+
     <div class="start-menu" id="startMenu">
 <div class="start-menu-header">
     <img src="./image/usericon.png" class="user-avatar" alt="User">
@@ -87,7 +92,7 @@
         <span>Log Off</span>
     </button>
     <button id="turnOffButton">
-        <img src="./image/turnoff.png" alt="Turn Off">
+        <img src="./image/turnoff.png" alt="Turn Off Computer">
         <span>Turn Off Computer</span>
     </button>
 </div>
@@ -124,6 +129,7 @@
     </div>
 
 <script>
+let highestZIndex = 100;
 document.addEventListener('DOMContentLoaded', () => {
 
     /* ==========================================================================
@@ -140,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const volumeSlider = document.getElementById('volume-slider');
     const muteCheckbox = document.getElementById('mute-checkbox');
 
-    let highestZIndex = 100;
     let currentContextMenu = null;
     let globalVolume = 0.75; // 기본 볼륨 (0.0 ~ 1.0)
     let isGlobalMuted = false; // 기본 음소거 상태
@@ -587,7 +592,130 @@ muteCheckbox.addEventListener('change', (e) => {
     updateClock();
     setInterval(updateClock, 1000);
     renderStartMenu();
+
+    // 폴더 창에서 전송된 메시지 처리
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'createWindow') {
+            createWindow(event.data);
+        }
+    });
 });
+
+// Webamp 창 생성 함수
+function createWebampWindow() {
+    // 이미 Webamp 창이 열려있으면 포커스만
+    if (window._webampWindow && document.body.contains(window._webampWindow)) {
+        window._webampWindow.style.zIndex = ++highestZIndex;
+        return;
+    }
+    // 창 엘리먼트 생성
+    const windowEl = document.createElement('div');
+    windowEl.className = 'window';
+    windowEl.style.cssText = `width: 380px; height: 420px; position: absolute; top: 60px; left: 300px; display: flex; flex-direction: column; padding: 3px; z-index: ${++highestZIndex};`;
+    windowEl.innerHTML = `
+        <div class="title-bar"><div class="title-bar-text"><img src="./image/mediaplayer.png" class="title-bar-icon" alt="">Webamp</div><div class="title-bar-controls"><button aria-label="Minimize"></button><button aria-label="Maximize"></button><button aria-label="Close"></button></div></div>
+        <div class="window-body" style="flex-grow: 1; padding: 0; margin: 0; min-height: 0; position: relative;"></div>
+        <div class="resizer top-left"></div><div class="resizer top-right"></div><div class="resizer bottom-left"></div><div class="resizer bottom-right"></div>
+        <div class="resizer top"></div><div class="resizer right"></div><div class="resizer bottom"></div><div class="resizer left"></div>
+    `;
+    document.body.appendChild(windowEl);
+    // 창 상호작용(드래그, 최소화 등) 기존 함수 재사용
+    makeWindowInteractive(windowEl, { title: 'Webamp', iconUrl: './image/mediaplayer.png' });
+    // Webamp 인스턴스 생성 및 렌더링
+    const webampDiv = windowEl.querySelector('.window-body');
+    window._webampInstance = new window.Webamp({
+        initialTracks: [
+            {
+                metaData: { artist: "Sample", title: "Canon" },
+                url: "./webamp/canon.mp3"
+            }
+        ]
+    });
+    window._webampInstance.renderWhenReady(webampDiv);
+    // 창 닫기 시 Webamp 인스턴스 제거
+    const closeBtn = windowEl.querySelector('button[aria-label="Close"]');
+    closeBtn.addEventListener('click', () => {
+        if (window._webampInstance) {
+            window._webampInstance.dispose();
+            window._webampInstance = null;
+        }
+        window._webampWindow = null;
+    });
+    window._webampWindow = windowEl;
+}
+
+// Webamp 아이콘 더블클릭 이벤트 연결 (Webamp를 #desktop-area에만 렌더링)
+setTimeout(() => {
+    const webampIcon = document.getElementById('webamp-icon');
+    if (webampIcon) {
+        let clickTimer = null;
+        webampIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                if (window._webampInstance) return;
+                const webampContainer = document.getElementById('webamp-container');
+                // 작업표시줄에 Webamp 탭 생성
+                const taskbarWindows = document.querySelector('.taskbar-windows');
+                const webampTab = document.createElement('button');
+                webampTab.className = 'taskbar-tab';
+                webampTab.innerHTML = '<img src="./image/mediaplayer.png" class="taskbar-tab-icon"><span>Webamp</span>';
+                taskbarWindows.appendChild(webampTab);
+                // Webamp 컨테이너 스타일 초기화
+                webampContainer.style.display = '';
+                webampContainer.style.zIndex = ++highestZIndex;
+                // Webamp 인스턴스 생성 및 렌더링
+                window._webampInstance = new window.Webamp({
+                    initialTracks: [
+                        {
+                            metaData: { artist: "Sample", title: "Canon" },
+                            url: "./webamp/canon.mp3"
+                        }
+                    ]
+                });
+                window._webampInstance.renderWhenReady(webampContainer);
+                // 탭 클릭 시 show/hide 및 z-index 조정
+                webampTab.addEventListener('click', () => {
+                    const isHidden = webampContainer.style.display === 'none';
+                    const currentZ = parseInt(webampContainer.style.zIndex) || 0;
+                    if (isHidden) {
+                        // 복원 + 최상위
+                        webampContainer.style.display = '';
+                        webampContainer.style.zIndex = ++highestZIndex;
+                        webampTab.classList.add('active');
+                    } else if (currentZ === highestZIndex) {
+                        // 이미 최상위면 최소화
+                        webampContainer.style.display = 'none';
+                        webampTab.classList.remove('active');
+                    } else {
+                        // 보이지만 최상위가 아니면 z-index만 올림
+                        webampContainer.style.zIndex = ++highestZIndex;
+                        webampTab.classList.add('active');
+                    }
+                });
+                // Webamp 컨테이너 클릭 시 항상 최상위로
+                webampContainer.addEventListener('mousedown', () => {
+                    if (webampContainer.style.display !== 'none') {
+                        webampContainer.style.zIndex = ++highestZIndex;
+                        webampTab.classList.add('active');
+                    }
+                });
+                // Webamp 닫힐 때 탭 제거
+                window._webampInstance.onClose(() => {
+                    window._webampInstance = null;
+                    webampContainer.innerHTML = '';
+                    webampTab.remove();
+                });
+                // Webamp 실행 시 탭 활성화
+                webampTab.classList.add('active');
+            } else {
+                clickTimer = setTimeout(() => { clickTimer = null; }, 200);
+            }
+        });
+    }
+}, 100);
+
 </script>
 
 </body>

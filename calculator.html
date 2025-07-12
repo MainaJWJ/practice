@@ -1,382 +1,160 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>공학용 계산기</title>
-    <style>
-        /* CSS (Cascading Style Sheets) 코드: 계산기 디자인 */
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #333;
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
-
-        .calculator {
-            width: 360px;
-            border: 2px solid #1c1c1c;
-            border-radius: 20px;
-            background-color: #2a2d37;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-            padding: 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #d4d4d2;
-            padding: 0 10px;
-            font-size: 14px;
-        }
-
-        .brand {
-            font-weight: bold;
-            font-family: 'Arial', sans-serif;
-            font-style: italic;
-        }
-
-        .solar-panel {
-            width: 80px;
-            height: 30px;
-            background-color: #1a1a1a;
-            border: 1px solid #444;
-        }
-
-        .display {
-            width: 100%;
-            background-color: #c4d2c4;
-            border: 2px solid #8e9a8e;
-            border-radius: 10px;
-            padding: 10px;
-            box-sizing: border-box;
-            margin: 15px 0;
-            text-align: right;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
-        }
-
-        #history {
-            font-size: 14px;
-            color: #555;
-            height: 20px;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        #result {
-            width: 100%;
-            border: none;
-            background-color: transparent;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 40px;
-            color: #2a3a2a;
-            text-align: right;
-            padding: 0;
-        }
-
-        #result:focus {
-            outline: none;
-        }
-        
-        .mode-indicator {
-            height: 15px;
-            font-size: 12px;
-            color: #ffc107;
-            text-align: left;
-            padding-left: 5px;
-        }
-        
-        #angle-mode-indicator, #second-func-indicator {
-            display: inline-block;
-            margin-right: 10px;
-            font-weight: bold;
-        }
-
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
-
-        button {
-            height: 50px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #e0e0e0;
-            background-color: #4a4d57;
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-            transition: all 0.1s ease;
-        }
-
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .function {
-            background-color: #3a3d47;
-        }
-
-        .operator {
-            background-color: #3a3d47;
-            color: #ffc107;
-        }
-        
-        .number {
-            background-color: #5a5d67;
-        }
-
-        #btn-equals {
-            background-color: #ff9800;
-            color: white;
-        }
-
-        #btn-ac {
-            background-color: #e91e63;
-            color: white;
-        }
-        
-        #btn-del {
-            background-color: #2196F3;
-            color: white;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=600, initial-scale=1.0">
+<title>계산기</title>
+<style>
+body {
+    background: #eaeaea;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.xp-calc {
+    background: #f7f6ef;
+    border: 1.5px solid #b5b5b5;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px #0002;
+    padding: 24px 24px 18px 24px;
+    min-width: 600px;
+}
+.xp-calc-display {
+    background: #fff;
+    border: 2px inset #b5b5b5;
+    border-radius: 2px;
+    height: 38px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 28px;
+    color: #222;
+    padding: 0 10px;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 1px 0 #fff8 inset;
+}
+.xp-calc-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    align-items: center;
+}
+.xp-calc-modes label {
+    margin-right: 8px;
+    white-space: nowrap;
+    font-weight: normal;
+}
+.xp-calc-modes input[type="radio"],
+.xp-calc-modes input[type="checkbox"] {
+    accent-color: #2056b5;
+    margin-right: 2px;
+    vertical-align: middle;
+}
+.xp-calc-buttons {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(7, 38px);
+    gap: 4px;
+}
+.xp-calc-buttons button {
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 15px;
+    border: 1.5px solid #b5b5b5;
+    background: #f3f3f3;
+    color: #222;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 #fff8 inset;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s, font-weight 0.1s;
+    outline: none;
+    font-weight: normal;
+    text-align: center;
+    user-select: none;
+}
+.xp-calc-buttons button:active {
+    background: #b5b5b5;
+}
+.xp-calc-buttons .red {
+    color: #d90000;
+    font-weight: bold;
+}
+.xp-calc-buttons .blue {
+    color: #2056b5;
+    font-weight: bold;
+}
+.xp-calc-buttons .purple {
+    color: #a000a0;
+    font-weight: bold;
+}
+.xp-calc-buttons .gray {
+    color: #888;
+}
+.xp-calc-buttons .wide {
+    grid-column: span 2;
+}
+.xp-calc-buttons .alpha {
+    background: #f3f3f3;
+    color: #888;
+    font-size: 14px;
+}
+.xp-calc-buttons button:focus {
+    outline: 2px solid #2056b5;
+}
+</style>
 </head>
 <body>
-
-    <div class="calculator">
-        <div class="header">
-            <div class="brand">calculator</div>
-            <div class="solar-panel"></div>
-        </div>
-        <div class="display">
-            <div id="history"></div>
-            <input type="text" id="result" value="0" readonly>
-            <div class="mode-indicator">
-                <span id="second-func-indicator"></span>
-                <span id="angle-mode-indicator">DEG</span>
-            </div>
-        </div>
-        <div class="buttons">
-            <button class="function" id="btn-2nd" onclick="toggleSecondFunction()">2nd</button>
-            <button class="function" onclick="appendValue('Math.PI')">π</button>
-            <button class="function" onclick="appendValue('Math.E')">e</button>
-            <button class="function" id="btn-ac" onclick="clearAll()">AC</button>
-            <button class="function" id="btn-del" onclick="deleteLast()">DEL</button>
-            
-            <button class="function" id="btn-x2" onclick="appendOperator('**2')">x²</button>
-            <button class="function" onclick="appendValue('1/')">1/x</button>
-            <button class="function" onclick="appendValue('Math.abs(')">|x|</button>
-            <button class="function" onclick="appendValue('Math.exp(')">exp</button>
-            <button class="operator" onclick="appendValue('%')">mod</button>
-            
-            <button class="function" id="btn-sqrt" onclick="appendValue('Math.sqrt(')">√</button>
-            <button class="function" onclick="appendValue('(')">(</button>
-            <button class="function" onclick="appendValue(')')">)</button>
-            <button class="function" onclick="appendValue('factorial(')">n!</button>
-            <button class="operator" onclick="appendOperator('/')">÷</button>
-            
-            <button class="function" id="btn-pow" onclick="appendOperator('**')">xʸ</button>
-            <button class="number" onclick="appendNumber('7')">7</button>
-            <button class="number" onclick="appendNumber('8')">8</button>
-            <button class="number" onclick="appendNumber('9')">9</button>
-            <button class="operator" onclick="appendOperator('*')">×</button>
-
-            <button class="function" id="btn-log" onclick="appendValue('Math.log10(')">log</button>
-            <button class="number" onclick="appendNumber('4')">4</button>
-            <button class="number" onclick="appendNumber('5')">5</button>
-            <button class="number" onclick="appendNumber('6')">6</button>
-            <button class="operator" onclick="appendOperator('-')">-</button>
-
-            <button class="function" id="btn-ln" onclick="appendValue('Math.log(')">ln</button>
-            <button class="number" onclick="appendNumber('1')">1</button>
-            <button class="number" onclick="appendNumber('2')">2</button>
-            <button class="number" onclick="appendNumber('3')">3</button>
-            <button class="operator" onclick="appendOperator('+')">+</button>
-
-            <button class="function" onclick="toggleAngleMode()" id="btn-angle">DEG</button>
-            <button class="function" id="btn-sin" onclick="appendTrigFunction('sin')">sin</button>
-            <button class="number" onclick="appendNumber('0')">0</button>
-            <button class="number" onclick="appendValue('.')">.</button>
-            <button id="btn-equals" onclick="calculate()">=</button>
-        </div>
+<div class="xp-calc">
+    <div class="xp-calc-display" id="display">0</div>
+    <div class="xp-calc-modes">
+        <label><input type="radio" name="base">Hex</label>
+        <label><input type="radio" name="base" checked>Dec</label>
+        <label><input type="radio" name="base">Oct</label>
+        <label><input type="radio" name="base">Bin</label>
+        <label><input type="radio" name="angle" checked>Degrees</label>
+        <label><input type="radio" name="angle">Radians</label>
+        <label><input type="radio" name="angle">Grads</label>
+        <label><input type="checkbox">Inv</label>
+        <label><input type="checkbox">Hyp</label>
     </div>
-
-    <script>
-        // JavaScript 코드: 계산기 기능 로직
-        const display = document.getElementById('result');
-        const historyDisplay = document.getElementById('history');
-        const angleModeIndicator = document.getElementById('angle-mode-indicator');
-        const secondFuncIndicator = document.getElementById('second-func-indicator');
-        
-        let currentExpression = '';
-        let isResultDisplayed = false;
-        let isRadians = false;
-        let isSecondFunction = false;
-
-        function appendNumber(number) {
-            if (isResultDisplayed) {
-                display.value = '';
-                currentExpression = '';
-                isResultDisplayed = false;
-            }
-            if (display.value === '0' && number !== '.') {
-                display.value = number;
-            } else {
-                display.value += number;
-            }
+    <div class="xp-calc-buttons">
+        <!-- 1행 -->
+        <button>Sta</button><button class="purple">F-E</button><button class="purple">(</button><button class="purple">)</button><button></button><button class="red wide">Backspace</button><button class="red">CE</button><button class="red">C</button><button></button><button></button>
+        <!-- 2행 -->
+        <button>Ave</button><button class="purple">dms</button><button class="purple">Exp</button><button class="purple">ln</button><button class="red">MC</button><button class="blue">7</button><button class="blue">8</button><button class="blue">9</button><button class="red">/</button><button class="red">Mod</button>
+        <!-- 3행 -->
+        <button>Sum</button><button class="purple">sin</button><button class="purple">x^y</button><button class="purple">log</button><button class="red">MR</button><button class="blue">4</button><button class="blue">5</button><button class="blue">6</button><button class="red">*</button><button class="red">Or</button>
+        <!-- 4행 -->
+        <button>Dat</button><button class="purple">cos</button><button class="purple">x^3</button><button class="purple">x^2</button><button class="red">MS</button><button class="blue">1</button><button class="blue">2</button><button class="blue">3</button><button class="red">-</button><button class="red">Xor</button>
+        <!-- 5행 -->
+        <button></button><button class="purple">tan</button><button class="purple">n!</button><button class="purple">pi</button><button class="red">M+</button><button class="blue">0</button><button class="blue">+/-</button><button class="blue">.</button><button class="red">+</button><button class="red">Lsh</button>
+        <!-- 6행 (A~F) -->
+        <button class="alpha">A</button><button class="alpha">B</button><button class="alpha">C</button><button class="alpha">D</button><button class="alpha">E</button><button class="alpha">F</button><button class="red wide">=</button><button class="red">Not</button><button class="red">Int</button><button></button>
+    </div>
+</div>
+<script>
+// 예시: 버튼 클릭 시 display에 숫자 입력 (실제 계산 기능은 기존 JS를 이식하거나 추가 구현 필요)
+const display = document.getElementById('display');
+document.querySelectorAll('.xp-calc-buttons button').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (this.textContent.match(/^[0-9]$/)) {
+            if (display.textContent === '0') display.textContent = '';
+            display.textContent += this.textContent;
+        } else if (this.textContent === 'C' || this.textContent === 'CE') {
+            display.textContent = '0';
+        } else if (this.textContent === 'Backspace') {
+            display.textContent = display.textContent.slice(0, -1) || '0';
+        } else if (this.textContent === '=') {
+            // 실제 계산 로직은 별도 구현 필요
         }
-        
-        function appendValue(value) {
-            if (isResultDisplayed) {
-                isResultDisplayed = false;
-            }
-            display.value += value;
-        }
-        
-        function appendOperator(op) {
-            if (isResultDisplayed) {
-                display.value = display.value; // 결과값을 이어서 사용
-                isResultDisplayed = false;
-            }
-            display.value += op;
-        }
-
-        function appendTrigFunction(func) {
-            let funcName = func;
-            if (isSecondFunction) {
-                // asin, acos, atan
-                funcName = 'a' + func;
-            }
-            appendValue(funcName + '(');
-        }
-
-        function clearAll() {
-            display.value = '0';
-            historyDisplay.innerText = '';
-            currentExpression = '';
-            isResultDisplayed = false;
-        }
-
-        function deleteLast() {
-            if (isResultDisplayed) {
-                clearAll();
-                return;
-            }
-            display.value = display.value.slice(0, -1);
-            if (display.value === '') {
-                display.value = '0';
-            }
-        }
-        
-        function toggleAngleMode() {
-            isRadians = !isRadians;
-            const btn = document.getElementById('btn-angle');
-            if (isRadians) {
-                angleModeIndicator.innerText = 'RAD';
-                btn.innerText = 'RAD';
-            } else {
-                angleModeIndicator.innerText = 'DEG';
-                btn.innerText = 'DEG';
-            }
-        }
-        
-        function toggleSecondFunction() {
-            isSecondFunction = !isSecondFunction;
-            updateFunctionButtons();
-        }
-        
-        function updateFunctionButtons() {
-            const secondIndicator = document.getElementById('second-func-indicator');
-            const x2Btn = document.getElementById('btn-x2');
-            const sqrtBtn = document.getElementById('btn-sqrt');
-            const powBtn = document.getElementById('btn-pow');
-            const logBtn = document.getElementById('btn-log');
-            const lnBtn = document.getElementById('btn-ln');
-            const sinBtn = document.getElementById('btn-sin');
-
-            if (isSecondFunction) {
-                secondIndicator.innerText = '2nd';
-                x2Btn.innerHTML = "x³"; x2Btn.onclick = () => appendOperator('**3');
-                sqrtBtn.innerHTML = "³√"; sqrtBtn.onclick = () => appendValue('Math.cbrt(');
-                powBtn.innerHTML = "ʸ√x"; powBtn.onclick = () => alert('미구현 기능'); // 예시
-                logBtn.innerHTML = "10<sup>x</sup>"; logBtn.onclick = () => appendValue('10**(');
-                lnBtn.innerHTML = "e<sup>x</sup>"; lnBtn.onclick = () => appendValue('Math.E**(');
-                sinBtn.innerHTML = "sin⁻¹"; 
-                // 다른 삼각함수들도 유사하게 변경 가능
-            } else {
-                secondIndicator.innerText = '';
-                x2Btn.innerHTML = "x²"; x2Btn.onclick = () => appendOperator('**2');
-                sqrtBtn.innerHTML = "√"; sqrtBtn.onclick = () => appendValue('Math.sqrt(');
-                powBtn.innerHTML = "xʸ"; powBtn.onclick = () => appendOperator('**');
-                logBtn.innerHTML = "log"; logBtn.onclick = () => appendValue('Math.log10(');
-                lnBtn.innerHTML = "ln"; lnBtn.onclick = () => appendValue('Math.log(');
-                sinBtn.innerHTML = "sin";
-            }
-        }
-
-        function factorial(n) {
-            if (n < 0 || n % 1 !== 0) return NaN; // 정수가 아니거나 음수면 계산 불가
-            if (n === 0 || n === 1) return 1;
-            let result = 1;
-            for (let i = 2; i <= n; i++) {
-                result *= i;
-            }
-            return result;
-        }
-
-        function calculate() {
-            let expression = display.value;
-            historyDisplay.innerText = expression + '=';
-
-            try {
-                // 팩토리얼 처리: factorial(5) -> factorial(5) (함수 호출 형태로 유지)
-                expression = expression.replace(/factorial\((\d+)\)/g, (match, num) => factorial(parseInt(num)));
-                
-                // 삼각함수 각도 처리 (DEG -> RAD)
-                if (!isRadians) {
-                     expression = expression.replace(/(sin|cos|tan)\(([^)]+)\)/g, (match, func, val) => {
-                         let evaluatedVal = eval(val); // 괄호 안의 표현식을 먼저 계산
-                         return `Math.${func}(${evaluatedVal} * Math.PI / 180)`;
-                     });
-                     expression = expression.replace(/(asin|acos|atan)\(([^)]+)\)/g, (match, func, val) => {
-                         let evaluatedVal = eval(val);
-                         return `(Math.${func}(${evaluatedVal}) * 180 / Math.PI)`;
-                     });
-                } else {
-                    expression = expression.replace(/(sin|cos|tan|asin|acos|atan)\(([^)]+)\)/g, (match, func, val) => {
-                        return `Math.${func}(${val})`;
-                    });
-                }
-
-                // JS에서 사용 가능한 형태로 표현식 변환
-                expression = expression.replace(/%/g, '%');
-                
-                // eval을 사용하여 최종 계산
-                let result = eval(expression);
-                
-                // 결과값이 너무 길 경우 지수 형태로 표현
-                if (result.toString().length > 15) {
-                    result = result.toExponential(9);
-                }
-                
-                display.value = result;
-                isResultDisplayed = true;
-
-            } catch (error) {
-                display.value = 'Error';
-                isResultDisplayed = true;
-            }
-        }
-    </script>
+    });
+});
+</script>
 </body>
 </html>

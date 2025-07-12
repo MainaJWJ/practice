@@ -241,6 +241,68 @@ body {
 }
 
 /* ==========================================================================
+   5-1. 폴더 내 아이콘 스타일
+   ========================================================================== */
+
+.folder-content {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.folder-icons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.folder-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 65px;
+    height: 65px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 5px;
+    border: 1px solid transparent;
+    /* border-radius 제거하여 바탕화면과 동일하게 */
+}
+
+.folder-icon:hover {
+    /* 바탕화면과 동일하게 hover 시 배경 변경하지 않음 */
+}
+
+.folder-icon.selected {
+    /* 바탕화면과 동일하게 전체 배경은 변경하지 않음 */
+}
+
+.folder-icon.selected span {
+    background-color: #0c57e2;
+    border: 1px dotted #ffffff;
+    color: white;
+}
+
+.folder-icon img {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 5px;
+}
+
+.folder-icon span {
+    color: #000;
+    font-size: 11px;
+    line-height: 1.2;
+    word-wrap: break-word;
+    max-width: 100%;
+    padding: 3px;
+    margin-top: 2px;
+    border: 1px solid transparent;
+}
+
+/* ==========================================================================
    6. 작업표시줄 (Taskbar) 스타일
    ========================================================================== */
 

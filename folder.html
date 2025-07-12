@@ -80,9 +80,54 @@
             </div>
         </aside>
         <div class="main-panel">
-            <main class="blog-posts">
-                <article class="post"><h1 class="post-title">main 내부에 본문</h1></article>
-                </main>
+            <main class="folder-content">
+                <div class="folder-icons">
+                    <a href="./second page.html" class="folder-icon" data-title="내 컴퓨터" data-icon-url="./image/mycomputer.png" data-open-mode="window">
+                        <img src="./image/mycomputer.png" alt="내 컴퓨터">
+                        <span>내 컴퓨터</span>
+                    </a>
+
+                    <a href="./jspaint/index.html" class="folder-icon" data-title="그림판" data-icon-url="./image/paint.png" data-open-mode="window">
+                        <img src="./image/mspaint.png" alt="그림판">
+                        <span>그림판</span>
+                    </a>
+
+                    <a href="./texteditor.html" class="folder-icon" data-title="문서편집기" data-icon-url="./image/texteditor.png" data-open-mode="window">
+                        <img src="./image/texteditor.png" alt="문서편집기">
+                        <span>문서편집기</span>
+                    </a>
+
+                    <a href="./webamp/index.html" class="folder-icon" data-title="미디어 플레이어" data-icon-url="./image/mediaplayer.png" data-open-mode="window">
+                        <img src="./image/mediaplayer.png" alt="미디어 플레이어">
+                        <span>미디어 플레이어</span>
+                    </a>
+
+                    <a href="./minipaint/index.html" class="folder-icon" data-title="포토샵" data-icon-url="./image/paint.png" data-open-mode="window">
+                        <img src="./image/paint.png" alt="포토샵">
+                        <span>포토샵</span>
+                    </a>
+
+                    <a href="./ballgame.html" class="folder-icon" data-title="공쏘기" data-icon-url="./image/shell.png" data-open-mode="window">
+                        <img src="./image/shell.png" alt="공쏘기">
+                        <span>공쏘기</span>
+                    </a>
+
+                    <a href="./textcounter.html" class="folder-icon" data-title="글자수세기" data-icon-url="./image/shell.png" data-open-mode="window">
+                        <img src="./image/shell.png" alt="글자수세기">
+                        <span>글자수세기</span>
+                    </a>
+
+                    <a href="./calculator.html" class="folder-icon" data-title="계산기" data-icon-url="./image/calculator.png" data-open-mode="window">
+                        <img src="./image/calculator.png" alt="계산기">
+                        <span>계산기</span>
+                    </a>
+
+                    <a href="https://www.google.com/webhp?igu=1" class="folder-icon" data-title="Internet Explorer" data-icon-url="./image/explore.png" data-open-mode="window">
+                        <img src="./image/explore.png" alt="Internet Explorer">
+                        <span>Internet Explorer</span>
+                    </a>
+                </div>
+            </main>
             <aside class="right-sidebar">
                 <fieldset><legend>About Me</legend><p style="font-size:11px;">aside 내부에 오른쪽 사이드 넣기</p></fieldset>
             </aside>
@@ -96,6 +141,15 @@
 </div>
 
     <script>
+        // ==========================================================================
+        // 1. 전역 변수 정의
+        // ==========================================================================
+        const folderIcons = document.querySelectorAll('.folder-icon');
+        const menuItems = document.querySelectorAll('.menu-bar .menu-item');
+
+        // ==========================================================================
+        // 2. 탭 기능 (기존 코드)
+        // ==========================================================================
         const tabs = document.querySelectorAll("menu[role=tablist]");
         for (let i = 0; i < tabs.length; i++) {
             const tab = tabs[i];
@@ -125,34 +179,240 @@
             }
         }
 
+        // ==========================================================================
+        // 3. 상단 드롭다운 메뉴 기능
+        // ==========================================================================
+        menuItems.forEach(menuItem => {
+            menuItem.addEventListener('click', (e) => {
+                e.stopPropagation(); // 이벤트가 부모로 전파되는 것을 막음
+                
+                // 현재 클릭한 메뉴가 이미 활성화 상태인지 확인
+                const isActive = menuItem.classList.contains('active');
 
-        // --- 상단 드롭다운 메뉴 기능 ---
-const menuItems = document.querySelectorAll('.menu-bar .menu-item');
+                // 모든 메뉴의 'active' 클래스를 먼저 제거
+                menuItems.forEach(item => item.classList.remove('active'));
 
-menuItems.forEach(menuItem => {
-    menuItem.addEventListener('click', (e) => {
-        e.stopPropagation(); // 이벤트가 부모로 전파되는 것을 막음
+                // 이미 활성화된 메뉴를 다시 클릭한 게 아니라면, active 클래스 추가
+                if (!isActive) {
+                    menuItem.classList.add('active');
+                }
+            });
+        });
+
+        // 메뉴 바깥 영역을 클릭하면 모든 메뉴를 닫음
+        document.addEventListener('click', () => {
+            menuItems.forEach(item => item.classList.remove('active'));
+        });
+
+        // 폴더 영역 클릭 시 아이콘 선택 해제
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.folder-icon')) {
+                folderIcons.forEach(icon => icon.classList.remove('selected'));
+            }
+        });
+
+        // 폴더 아이콘 우클릭 컨텍스트 메뉴
+        folderIcons.forEach(icon => {
+            icon.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                
+                // 다른 아이콘 선택 해제하고 현재 아이콘 선택
+                folderIcons.forEach(otherIcon => otherIcon.classList.remove('selected'));
+                icon.classList.add('selected');
+                
+                // 컨텍스트 메뉴 생성
+                const contextMenu = document.createElement('ul');
+                contextMenu.className = 'context-menu';
+                contextMenu.style.cssText = `
+                    position: fixed;
+                    top: ${e.clientY}px;
+                    left: ${e.clientX}px;
+                    background: #f0f0f0;
+                    border: 1px solid #999;
+                    padding: 5px 0;
+                    margin: 0;
+                    list-style: none;
+                    z-index: 10000;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                `;
+                
+                const menuItems = [
+                    { text: '열기', action: () => {
+                        if (icon.dataset.openMode === 'window') {
+                            window.parent.postMessage({
+                                type: 'createWindow',
+                                title: icon.dataset.title,
+                                iframeSrc: icon.href,
+                                iconUrl: icon.dataset.iconUrl
+                            }, '*');
+                        }
+                    }},
+                    { text: '바로가기 만들기', action: () => alert('바로가기 만들기 기능은 아직 구현되지 않았습니다.') },
+                    { separator: true },
+                    { text: '복사', action: () => alert('복사 기능은 아직 구현되지 않았습니다.') },
+                    { text: '삭제', action: () => alert('삭제 기능은 아직 구현되지 않았습니다.') },
+                    { separator: true },
+                    { text: '속성', action: () => alert('속성 기능은 아직 구현되지 않았습니다.') }
+                ];
+                
+                menuItems.forEach(item => {
+                    const li = document.createElement('li');
+                    if (item.separator) {
+                        li.style.cssText = 'height: 1px; background: #999; margin: 2px 0;';
+                    } else {
+                        li.style.cssText = 'padding: 5px 20px; cursor: pointer; font-size: 12px;';
+                        li.textContent = item.text;
+                        li.addEventListener('click', () => {
+                            item.action();
+                            document.body.removeChild(contextMenu);
+                        });
+                        li.addEventListener('mouseenter', () => {
+                            li.style.backgroundColor = '#0078d7';
+                            li.style.color = 'white';
+                        });
+                        li.addEventListener('mouseleave', () => {
+                            li.style.backgroundColor = '';
+                            li.style.color = '';
+                        });
+                    }
+                    contextMenu.appendChild(li);
+                });
+                
+                document.body.appendChild(contextMenu);
+                
+                // 다른 곳 클릭 시 메뉴 닫기
+                const closeMenu = () => {
+                    if (contextMenu.parentNode) {
+                        document.body.removeChild(contextMenu);
+                    }
+                    document.removeEventListener('click', closeMenu);
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closeMenu);
+                }, 100);
+            });
+        });
+
+        // ==========================================================================
+        // 4. 폴더 아이콘 기능 구현
+        // ==========================================================================
         
-        // 현재 클릭한 메뉴가 이미 활성화 상태인지 확인
-        const isActive = menuItem.classList.contains('active');
+        folderIcons.forEach(icon => {
+            let clickTimer = null;
+            
+            icon.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (clickTimer) { // 더블클릭
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    
+                    if (this.dataset.openMode === 'window') {
+                        // 항상 부모 창에 새 창을 생성하도록 메시지 전송
+                        window.parent.postMessage({
+                            type: 'createWindow',
+                            title: this.dataset.title,
+                            iframeSrc: this.href,
+                            iconUrl: this.dataset.iconUrl
+                        }, '*');
+                    }
+                } else { // 싱글클릭
+                    clickTimer = setTimeout(() => {
+                        clickTimer = null;
+                        folderIcons.forEach(otherIcon => otherIcon.classList.remove('selected'));
+                        this.classList.add('selected');
+                    }, 200);
+                }
+            });
 
-        // 모든 메뉴의 'active' 클래스를 먼저 제거
-        menuItems.forEach(item => item.classList.remove('active'));
+            // 아이콘 이름 편집 기능
+            const span = icon.querySelector('span');
+            span.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const currentText = this.textContent;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentText;
+                input.style.cssText = `
+                    width: 100%;
+                    border: 1px solid #0078d7;
+                    background: white;
+                    font-size: 11px;
+                    text-align: center;
+                    outline: none;
+                `;
+                
+                this.textContent = '';
+                this.appendChild(input);
+                input.focus();
+                input.select();
+                
+                const finishEditing = () => {
+                    const newText = input.value.trim();
+                    if (newText) {
+                        this.textContent = newText;
+                    } else {
+                        this.textContent = currentText;
+                    }
+                };
+                
+                input.addEventListener('blur', finishEditing);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        finishEditing();
+                    } else if (e.key === 'Escape') {
+                        this.textContent = currentText;
+                    }
+                });
+            });
+        });
 
-        // 이미 활성화된 메뉴를 다시 클릭한 게 아니라면, active 클래스 추가
-        if (!isActive) {
-            menuItem.classList.add('active');
-        }
-    });
-});
+        // 부모 창으로부터 메시지 수신 (필요시 사용)
+        window.addEventListener('message', (event) => {
+            // 폴더 내부에서는 창 생성을 부모 창에서 처리하므로 여기서는 처리하지 않음
+        });
 
-// 메뉴 바깥 영역을 클릭하면 모든 메뉴를 닫음
-document.addEventListener('click', () => {
-    menuItems.forEach(item => item.classList.remove('active'));
-});
+        // 아이콘 드래그 앤 드롭 정렬 기능
+        const folderIconsContainer = document.querySelector('.folder-icons');
+        let draggedIcon = null;
 
-
-
+        folderIcons.forEach(icon => {
+            icon.draggable = true;
+            
+            icon.addEventListener('dragstart', (e) => {
+                draggedIcon = icon;
+                icon.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            icon.addEventListener('dragend', () => {
+                icon.style.opacity = '';
+                draggedIcon = null;
+            });
+            
+            icon.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            
+            icon.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedIcon && draggedIcon !== icon) {
+                    const allIcons = Array.from(folderIcons);
+                    const draggedIndex = allIcons.indexOf(draggedIcon);
+                    const dropIndex = allIcons.indexOf(icon);
+                    
+                    if (draggedIndex < dropIndex) {
+                        icon.parentNode.insertBefore(draggedIcon, icon.nextSibling);
+                    } else {
+                        icon.parentNode.insertBefore(draggedIcon, icon);
+                    }
+                }
+            });
+        });
 
     </script>
 
