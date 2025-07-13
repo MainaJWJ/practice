@@ -33,6 +33,81 @@
             box-shadow: none;
             background: #f7f6f2; /* 창 배경색 추가 */
         }
+
+        /* 폴더 내 드래그 선택을 위한 영역 스타일 */
+        .folder-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 드래그 선택 사각형 스타일 */
+        .selection-rectangle {
+            position: absolute;
+            border: 1px dotted #000000;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* 드래그 선택 시 아이콘 하이라이트 효과 */
+        .folder-icon.drag-selected {
+            position: relative;
+        }
+        .folder-icon.drag-selected img {
+            opacity: 0.75;
+            filter: drop-shadow(0 0 blue);
+        }
+        .folder-icon.drag-selected span {
+            background-color: #0b61ff;
+            color: white;
+        }
+
+        /* 드래그 선택 완료 후 유지되는 선택 상태 */
+        .folder-icon.drag-selected-final {
+            position: relative;
+        }
+        .folder-icon.drag-selected-final img {
+            opacity: 0.75;
+            filter: drop-shadow(0 0 blue);
+        }
+        .folder-icon.drag-selected-final span {
+            background-color: #0b61ff;
+            color: white;
+        }
+
+        /* 폴더 아이콘 점선 테두리 제거 */
+        .folder-icon {
+            outline: none;
+        }
+
+        /* 컨텍스트 메뉴 스타일 */
+        .context-menu {
+            position: fixed;
+            background: #f0f0f0;
+            border: 1px solid #999;
+            padding: 5px 0;
+            margin: 0;
+            list-style: none;
+            z-index: 10000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .context-menu-item {
+            padding: 5px 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .context-menu-item:hover {
+            background-color: #0078d7;
+            color: white;
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background: #999;
+            margin: 2px 0;
+        }
     </style>
 </head>
 
@@ -146,6 +221,13 @@
         // ==========================================================================
         const folderIcons = document.querySelectorAll('.folder-icon');
         const menuItems = document.querySelectorAll('.menu-bar .menu-item');
+        const folderContent = document.querySelector('.folder-content');
+        
+        // 드래그 선택 관련 변수
+        let isDragSelecting = false;
+        let selectionRectangle = null;
+        let startX = 0, startY = 0;
+        let currentContextMenu = null;
 
         // ==========================================================================
         // 2. 탭 기능 (기존 코드)
@@ -204,12 +286,150 @@
             menuItems.forEach(item => item.classList.remove('active'));
         });
 
+        // ==========================================================================
+        // 3-1. 폴더 내 드래그 선택 기능
+        // ==========================================================================
+        folderContent.addEventListener('mousedown', (e) => {
+            // 아이콘, 메뉴, 툴바 위에서 시작되면 기능 비활성화
+            if (e.target.closest('.folder-icon') || e.target.closest('.menu-bar') || e.target.closest('.folder-toolbars')) {
+                return;
+            }
+            
+            isDragSelecting = true;
+            window.dragSelectionCompleted = false; // 드래그 선택 시작 시 플래그 초기화
+            
+            // 폴더 콘텐츠 내부에서의 상대적인 마우스 위치 계산
+            const rect = folderContent.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            // 선택 사각형 div 생성 및 초기화
+            selectionRectangle = document.createElement('div');
+            selectionRectangle.className = 'selection-rectangle';
+            selectionRectangle.style.left = `${startX}px`;
+            selectionRectangle.style.top = `${startY}px`;
+            selectionRectangle.style.width = '0px';
+            selectionRectangle.style.height = '0px';
+            folderContent.appendChild(selectionRectangle);
+
+            // 문서 전체에 이벤트 리스너를 추가하여 드래그가 끊기지 않게 함
+            document.addEventListener('mousemove', onDragSelect);
+            document.addEventListener('mouseup', onStopDragSelect, { once: true });
+        });
+
+        function onDragSelect(e) {
+            if (!isDragSelecting) return;
+
+            const rect = folderContent.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            // 사각형의 너비와 높이, 그리고 시작 위치 계산
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            const newLeft = Math.min(startX, currentX);
+            const newTop = Math.min(startY, currentY);
+
+            // 사각형 스타일 실시간 업데이트
+            selectionRectangle.style.left = `${newLeft}px`;
+            selectionRectangle.style.top = `${newTop}px`;
+            selectionRectangle.style.width = `${width}px`;
+            selectionRectangle.style.height = `${height}px`;
+
+            // 드래그 선택 영역과 겹치는 아이콘들 찾기
+            const folderIcons = document.querySelectorAll('.folder-icon');
+            folderIcons.forEach(icon => {
+                const iconRect = icon.getBoundingClientRect();
+                const iconLeft = iconRect.left - rect.left;
+                const iconTop = iconRect.top - rect.top;
+                const iconRight = iconLeft + iconRect.width;
+                const iconBottom = iconTop + iconRect.height;
+
+                // 아이콘이 선택 사각형과 겹치는지 확인
+                const isIntersecting = !(newLeft > iconRight || 
+                                       newLeft + width < iconLeft || 
+                                       newTop > iconBottom || 
+                                       newTop + height < iconTop);
+
+                if (isIntersecting) {
+                    icon.classList.add('drag-selected');
+                    icon.classList.remove('drag-selected-final'); // 기존 최종 선택 상태 제거
+                } else {
+                    icon.classList.remove('drag-selected');
+                }
+            });
+        }
+
+        function onStopDragSelect() {
+            isDragSelecting = false;
+            if (selectionRectangle) {
+                selectionRectangle.remove(); // 드래그가 끝나면 사각형 제거
+            }
+            // 드래그 선택된 아이콘들을 최종 선택 상태로 변경
+            const selectedIcons = document.querySelectorAll('.folder-icon.drag-selected');
+            selectedIcons.forEach(icon => {
+                icon.classList.remove('drag-selected');
+                icon.classList.add('drag-selected-final');
+            });
+            document.removeEventListener('mousemove', onDragSelect);
+            
+            // 드래그 선택이 완료되었음을 표시하는 플래그 설정
+            window.dragSelectionCompleted = true;
+        }
+
         // 폴더 영역 클릭 시 아이콘 선택 해제
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.folder-icon')) {
-                folderIcons.forEach(icon => icon.classList.remove('selected'));
+                folderIcons.forEach(icon => {
+                    icon.classList.remove('selected');
+                    icon.classList.remove('drag-selected-final'); // 드래그 선택 상태도 해제
+                });
+            }
+            
+            // 드래그 선택 해제 (다른 곳 클릭 시) - 드래그 선택이 완료된 후에만
+            if (!isDragSelecting && window.dragSelectionCompleted) {
+                document.querySelectorAll('.folder-icon.drag-selected-final').forEach(icon => {
+                    icon.classList.remove('drag-selected-final');
+                });
+                window.dragSelectionCompleted = false; // 플래그 초기화
             }
         });
+
+        // ==========================================================================
+        // 3-2. 폴더 내 컨텍스트 메뉴 기능
+        // ==========================================================================
+        
+        // 기존 컨텍스트 메뉴 제거 함수
+        function removeContextMenu() {
+            if (currentContextMenu) {
+                currentContextMenu.remove();
+                currentContextMenu = null;
+            }
+        }
+
+        // 컨텍스트 메뉴 생성 함수
+        function createContextMenu(items, x, y) {
+            removeContextMenu();
+            const menu = document.createElement('ul');
+            menu.className = 'context-menu';
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            
+            items.forEach(item => {
+                const li = document.createElement('li');
+                if (item.separator) {
+                    li.className = 'context-menu-separator';
+                } else {
+                    li.className = 'context-menu-item';
+                    li.textContent = item.text;
+                    if (item.action) li.addEventListener('click', item.action);
+                }
+                menu.appendChild(li);
+            });
+            
+            document.body.appendChild(menu);
+            currentContextMenu = menu;
+        }
 
         // 폴더 아이콘 우클릭 컨텍스트 메뉴
         folderIcons.forEach(icon => {
@@ -219,22 +439,6 @@
                 // 다른 아이콘 선택 해제하고 현재 아이콘 선택
                 folderIcons.forEach(otherIcon => otherIcon.classList.remove('selected'));
                 icon.classList.add('selected');
-                
-                // 컨텍스트 메뉴 생성
-                const contextMenu = document.createElement('ul');
-                contextMenu.className = 'context-menu';
-                contextMenu.style.cssText = `
-                    position: fixed;
-                    top: ${e.clientY}px;
-                    left: ${e.clientX}px;
-                    background: #f0f0f0;
-                    border: 1px solid #999;
-                    padding: 5px 0;
-                    margin: 0;
-                    list-style: none;
-                    z-index: 10000;
-                    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-                `;
                 
                 const menuItems = [
                     { text: '열기', action: () => {
@@ -246,52 +450,70 @@
                                 iconUrl: icon.dataset.iconUrl
                             }, '*');
                         }
+                        removeContextMenu();
                     }},
-                    { text: '바로가기 만들기', action: () => alert('바로가기 만들기 기능은 아직 구현되지 않았습니다.') },
+                    { text: '바로가기 만들기', action: () => {
+                        alert('바로가기 만들기 기능은 아직 구현되지 않았습니다.');
+                        removeContextMenu();
+                    }},
                     { separator: true },
-                    { text: '복사', action: () => alert('복사 기능은 아직 구현되지 않았습니다.') },
-                    { text: '삭제', action: () => alert('삭제 기능은 아직 구현되지 않았습니다.') },
+                    { text: '복사', action: () => {
+                        alert('복사 기능은 아직 구현되지 않았습니다.');
+                        removeContextMenu();
+                    }},
+                    { text: '삭제', action: () => {
+                        alert('삭제 기능은 아직 구현되지 않았습니다.');
+                        removeContextMenu();
+                    }},
                     { separator: true },
-                    { text: '속성', action: () => alert('속성 기능은 아직 구현되지 않았습니다.') }
+                    { text: '속성', action: () => {
+                        alert('속성 기능은 아직 구현되지 않았습니다.');
+                        removeContextMenu();
+                    }}
                 ];
                 
-                menuItems.forEach(item => {
-                    const li = document.createElement('li');
-                    if (item.separator) {
-                        li.style.cssText = 'height: 1px; background: #999; margin: 2px 0;';
-                    } else {
-                        li.style.cssText = 'padding: 5px 20px; cursor: pointer; font-size: 12px;';
-                        li.textContent = item.text;
-                        li.addEventListener('click', () => {
-                            item.action();
-                            document.body.removeChild(contextMenu);
-                        });
-                        li.addEventListener('mouseenter', () => {
-                            li.style.backgroundColor = '#0078d7';
-                            li.style.color = 'white';
-                        });
-                        li.addEventListener('mouseleave', () => {
-                            li.style.backgroundColor = '';
-                            li.style.color = '';
-                        });
-                    }
-                    contextMenu.appendChild(li);
-                });
-                
-                document.body.appendChild(contextMenu);
-                
-                // 다른 곳 클릭 시 메뉴 닫기
-                const closeMenu = () => {
-                    if (contextMenu.parentNode) {
-                        document.body.removeChild(contextMenu);
-                    }
-                    document.removeEventListener('click', closeMenu);
-                };
-                
-                setTimeout(() => {
-                    document.addEventListener('click', closeMenu);
-                }, 100);
+                createContextMenu(menuItems, e.clientX, e.clientY);
             });
+        });
+
+        // 폴더 빈 공간 우클릭 컨텍스트 메뉴
+        folderContent.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('.folder-icon') || e.target.closest('.menu-bar') || e.target.closest('.folder-toolbars')) {
+                return;
+            }
+            
+            e.preventDefault();
+            
+            const menuItems = [
+                { text: '보기', action: () => {
+                    alert('보기 옵션은 아직 구현되지 않았습니다.');
+                    removeContextMenu();
+                }},
+                { separator: true },
+                { text: '새로 만들기', action: () => {
+                    alert('새로 만들기 기능은 아직 구현되지 않았습니다.');
+                    removeContextMenu();
+                }},
+                { separator: true },
+                { text: '붙여넣기', action: () => {
+                    alert('붙여넣기 기능은 아직 구현되지 않았습니다.');
+                    removeContextMenu();
+                }},
+                { separator: true },
+                { text: '속성', action: () => {
+                    alert('속성 기능은 아직 구현되지 않았습니다.');
+                    removeContextMenu();
+                }}
+            ];
+            
+            createContextMenu(menuItems, e.clientX, e.clientY);
+        });
+
+        // 다른 곳 클릭 시 컨텍스트 메뉴 닫기
+        document.addEventListener('click', (e) => {
+            if (currentContextMenu && !currentContextMenu.contains(e.target)) {
+                removeContextMenu();
+            }
         });
 
         // ==========================================================================
@@ -320,8 +542,12 @@
                 } else { // 싱글클릭
                     clickTimer = setTimeout(() => {
                         clickTimer = null;
-                        folderIcons.forEach(otherIcon => otherIcon.classList.remove('selected'));
+                        folderIcons.forEach(otherIcon => {
+                            otherIcon.classList.remove('selected');
+                            otherIcon.classList.remove('drag-selected-final'); // 드래그 선택 상태도 해제
+                        });
                         this.classList.add('selected');
+                        this.classList.add('drag-selected-final'); // 드래그 선택과 동일한 효과 적용
                     }, 200);
                 }
             });

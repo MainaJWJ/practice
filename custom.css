@@ -220,6 +220,7 @@ body {
     text-align: center;
     text-decoration: none;
     cursor: pointer;
+    outline: none; /* 클릭 시 점선 테두리 제거 */
 }
 
 .desktop-icon img {
@@ -236,8 +237,13 @@ body {
 }
 
 .desktop-icon.selected span {
-    background-color: #0c57e2;
-    border: 1px dotted #ffffff;
+    background-color: #0b61ff;
+    color: white;
+    border: none;
+}
+.desktop-icon.selected img {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 blue);
 }
 
 /* ==========================================================================
@@ -268,6 +274,7 @@ body {
     cursor: pointer;
     padding: 5px;
     border: 1px solid transparent;
+    outline: none; /* 클릭 시 점선 테두리 제거 */
     /* border-radius 제거하여 바탕화면과 동일하게 */
 }
 
@@ -281,8 +288,8 @@ body {
 
 .folder-icon.selected span {
     background-color: #0c57e2;
-    border: 1px dotted #ffffff;
     color: white;
+    border: none;
 }
 
 .folder-icon img {
@@ -364,14 +371,71 @@ button.start-button:focus {
 }
 
 .taskbar-notification-area {
-    background-color: #2077d7;
-    border: 1px solid #0041a1;
-    border-right-color: #2e8ae8;
-    border-bottom-color: #2e8ae8;
-    padding: 2px 10px;
-    color: white;
+    background: linear-gradient(
+        to bottom,
+        #0c59b9 1%,
+        #139ee9 6%,
+        #18b5f2 10%,
+        #139beb 14%,
+        #1290e8 19%,
+        #0d8dea 63%,
+        #0d9ff1 81%,
+        #0f9eed 88%,
+        #119be9 91%,
+        #1392e2 94%,
+        #137ed7 97%,
+        #095bc9 100%
+    );
+    color: #fff;
+    font-family: Tahoma, Geneva, Verdana, sans-serif;
     font-size: 11px;
+    font-weight: lighter;
+    height: 30px;
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    margin-left: 10px;
+    border-left: 1px solid #1042af;
+    box-shadow: inset 1px 0 1px #18bbff;
+    text-shadow: none;
+    letter-spacing: 0.5px;
 }
+#taskbar-clock {
+    color: #fff;
+    text-shadow: none;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.taskbar-notification-area .notification-icon {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+.taskbar-notification-area .notification-icon img {
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+}
+.taskbar-notification-area img.notification-icon {
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    margin-right: -5px;
+}
+.taskbar-notification-area img[src*="good.png"] {
+    margin-left: -10px;
+}
+.taskbar-notification-area img[src*="printer.png"] {
+    margin-left: -4px;
+}
+
 
 /* ==========================================================================
    7. 기타 추가 스타일
@@ -590,6 +654,7 @@ button.start-button:focus {
     
     cursor: pointer;
     border-radius: 3px;
+    outline: none;
 }
 
 /* 탭 - 평소 상태 (비활성) */
@@ -858,6 +923,32 @@ button.start-button:focus {
     pointer-events: none; /* 사각형 자체가 마우스 이벤트를 방해하지 않도록 설정 */
 }
 
+/* 드래그 선택 시 아이콘 하이라이트 효과 */
+.desktop-icon.drag-selected {
+    position: relative;
+}
+.desktop-icon.drag-selected img {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 blue);
+}
+.desktop-icon.drag-selected span {
+    background-color: #0b61ff;
+    color: white;
+}
+
+/* 드래그 선택 완료 후 유지되는 선택 상태 */
+.desktop-icon.drag-selected-final {
+    position: relative;
+}
+.desktop-icon.drag-selected-final img {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 blue);
+}
+.desktop-icon.drag-selected-final span {
+    background-color: #0b61ff;
+    color: white;
+}
+
 
 /* ==========================================================================
    창 드래그 시 화면 전체를 덮는 오버레이 스타일
@@ -871,5 +962,18 @@ button.start-button:focus {
     z-index: 9999; /* 다른 모든 창보다 위에 있지만, 드래그 중인 창보다는 아래에 위치 */
     cursor: move;  /* 화면 전체에서 '이동' 커서 모양 표시 */
 }
+
+.desktop-icon,
+.folder-icon {
+    outline: none;
+}
+
+.desktop-icon:focus,
+.folder-icon:focus,
+.desktop-icon:focus-visible,
+.folder-icon:focus-visible {
+    outline: none;
+}
+
 
 
