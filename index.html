@@ -221,13 +221,19 @@ function applyGlobalAudioState() {
     function createWindow(options) {
         const windowEl = document.createElement('div');
         windowEl.className = 'window';
-        windowEl.style.cssText = `width: 660px; height: 500px; position: absolute; top: 40px; left: 250px; display: flex; flex-direction: column; padding: 3px;`;
+        windowEl.style.cssText = `width: ${options.width || 660}px; height: ${options.height || 500}px; position: absolute; top: 40px; left: 250px; display: flex; flex-direction: column; padding: 3px;`;
         const iconHtml = options.iconUrl ? `<img src="${options.iconUrl}" class="title-bar-icon" alt="">` : '';
         windowEl.innerHTML = `
-            <div class="title-bar"><div class="title-bar-text">${iconHtml}${options.title}</div><div class="title-bar-controls"><button aria-label="Minimize"></button><button aria-label="Maximize"></button><button aria-label="Close"></button></div></div>
+            <div class="title-bar"><div class="title-bar-text">${iconHtml}${options.title}</div><div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"${options.resizable === false ? ' disabled style=\"opacity:0.5;pointer-events:none;\"' : ''}></button>
+                <button aria-label="Close"></button>
+            </div></div>
             <div class="window-body" style="flex-grow: 1; padding: 0; margin: 0; min-height: 0;"><iframe src="${options.iframeSrc}" style="width:100%; height:100%; border:0;"></iframe></div>
+            ${options.resizable === false ? '' : `
             <div class="resizer top-left"></div><div class="resizer top-right"></div><div class="resizer bottom-left"></div><div class="resizer bottom-right"></div>
             <div class="resizer top"></div><div class="resizer right"></div><div class="resizer bottom"></div><div class="resizer left"></div>
+            `}
         `;
         // createWindow 함수 내부...
 
@@ -350,6 +356,38 @@ win.querySelectorAll('.resizer').forEach(resizer => {
 
         win.addEventListener('mousedown', () => bringToFront(win), true);
         bringToFront(win);
+
+        // 리사이즈 이벤트 등록
+        if (options.resizable !== false) {
+            win.querySelectorAll('.resizer').forEach(resizer => {
+                resizer.addEventListener('mousedown', (e) => {
+                    if (isMaximized) return;
+                    e.preventDefault();
+                    
+                    resizer.classList.add('is-resizing');
+
+                    let startX = e.clientX, startY = e.clientY;
+                    let startWidth = win.offsetWidth, startHeight = win.offsetHeight;
+                    let startLeft = win.offsetLeft, startTop = win.offsetTop;
+                    
+                    const onResize = (e) => {
+                        const dx = e.clientX - startX, dy = e.clientY - startY;
+                        if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) win.style.width = `${startWidth + dx}px`;
+                        if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) win.style.height = `${startHeight + dy}px`;
+                        if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) { win.style.width = `${startWidth - dx}px`; win.style.left = `${startLeft + dx}px`; }
+                        if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) { win.style.height = `${startHeight - dy}px`; win.style.top = `${startTop + dy}px`; }
+                    };
+                    
+                    const onStopResize = () => {
+                        resizer.classList.remove('is-resizing');
+                        document.removeEventListener('mousemove', onResize);
+                    };
+
+                    document.addEventListener('mousemove', onResize);
+                    document.addEventListener('mouseup', onStopResize, { once: true });
+                });
+            });
+        }
     }
 
     /* ==========================================================================
@@ -714,7 +752,8 @@ muteCheckbox.addEventListener('change', (e) => {
                 iframeSrc: './pinball/space-cadet.html',
                 iconUrl: './image/pinball.png',
                 width: 600,
-                height: 475
+                height: 475,
+                resizable: false // 크기 조절 불가 옵션 추가
             });
         });
         // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
@@ -729,8 +768,9 @@ muteCheckbox.addEventListener('change', (e) => {
                 title: 'Minesweeper',
                 iframeSrc: './minesweeper/index.html',
                 iconUrl: './image/minesweeper.png',
-                width: 400,
-                height: 500
+                width: 280, // 가로 500px
+                height: 355, // 세로 500px
+                resizable: false // 크기 조절 불가 옵션 추가
             });
         });
         // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
