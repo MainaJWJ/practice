@@ -768,55 +768,12 @@ muteCheckbox.addEventListener('change', (e) => {
                 title: 'Minesweeper',
                 iframeSrc: './minesweeper/index.html',
                 iconUrl: './image/minesweeper.png',
-                width: 280, // 가로 500px
-                height: 355, // 세로 500px
+                width: 280,
+                height: 355, 
                 resizable: false // 크기 조절 불가 옵션 추가
             });
         });
         // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
-    }
-
-    // 노트패드 아이콘 클릭 시 창 생성
-    const notepadIcon = document.getElementById('notepad-icon');
-    if (notepadIcon) {
-        notepadIcon.addEventListener('dblclick', function(e) {
-            e.preventDefault();
-            createWindow({
-                title: 'Notepad',
-                iframeSrc: './notepad/index.html',
-                iconUrl: './image/notepad.png',
-                width: 500,
-                height: 400
-            });
-        });
-    }
-    // 사운드 레코더 아이콘 클릭 시 창 생성
-    const soundrecorderIcon = document.getElementById('soundrecorder-icon');
-    if (soundrecorderIcon) {
-        soundrecorderIcon.addEventListener('dblclick', function(e) {
-            e.preventDefault();
-            createWindow({
-                title: 'Sound Recorder',
-                iframeSrc: './sound-recorder/index.html',
-                iconUrl: './image/sound.png',
-                width: 400,
-                height: 400
-            });
-        });
-    }
-    // JS Solitaire 아이콘 클릭 시 창 생성
-    const solitaireIcon = document.getElementById('solitaire-icon');
-    if (solitaireIcon) {
-        solitaireIcon.addEventListener('dblclick', function(e) {
-            e.preventDefault();
-            createWindow({
-                title: 'JS Solitaire',
-                iframeSrc: './js-solitaire/index.html',
-                iconUrl: './image/solitaire.png',
-                width: 660,
-                height: 470
-            });
-        });
     }
 });
 
