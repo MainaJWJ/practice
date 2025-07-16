@@ -79,6 +79,14 @@
             <span>명령 프롬프트</span>
         </a>
         </a>
+        <a href="#" class="desktop-icon" id="pinball-icon" data-title="3D Pinball" data-icon-url="./image/pinball.png">
+            <img src="./image/pinball.png" alt="3D Pinball">
+            <span>3D Pinball</span>
+        </a>
+        <a href="#" class="desktop-icon" id="minesweeper-icon" data-title="Minesweeper" data-icon-url="./image/minesweeper.png">
+            <img src="./image/minesweeper.png" alt="Minesweeper">
+            <span>Minesweeper</span>
+        </a>
     </div>
 
     <div id="webamp-container"></div>
@@ -695,6 +703,81 @@ muteCheckbox.addEventListener('change', (e) => {
             createWindow(event.data);
         }
     });
+
+    // 핀볼 아이콘 클릭 시 창 생성
+    const pinballIcon = document.getElementById('pinball-icon');
+    if (pinballIcon) {
+        pinballIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            createWindow({
+                title: '3D Pinball for Windows - Space Cadet',
+                iframeSrc: './pinball/space-cadet.html',
+                iconUrl: './image/pinball.png',
+                width: 600,
+                height: 475
+            });
+        });
+        // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
+    }
+
+    // 마인스위퍼 아이콘 클릭 시 창 생성
+    const minesweeperIcon = document.getElementById('minesweeper-icon');
+    if (minesweeperIcon) {
+        minesweeperIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            createWindow({
+                title: 'Minesweeper',
+                iframeSrc: './minesweeper/index.html',
+                iconUrl: './image/minesweeper.png',
+                width: 400,
+                height: 500
+            });
+        });
+        // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
+    }
+
+    // 노트패드 아이콘 클릭 시 창 생성
+    const notepadIcon = document.getElementById('notepad-icon');
+    if (notepadIcon) {
+        notepadIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            createWindow({
+                title: 'Notepad',
+                iframeSrc: './notepad/index.html',
+                iconUrl: './image/notepad.png',
+                width: 500,
+                height: 400
+            });
+        });
+    }
+    // 사운드 레코더 아이콘 클릭 시 창 생성
+    const soundrecorderIcon = document.getElementById('soundrecorder-icon');
+    if (soundrecorderIcon) {
+        soundrecorderIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            createWindow({
+                title: 'Sound Recorder',
+                iframeSrc: './sound-recorder/index.html',
+                iconUrl: './image/sound.png',
+                width: 400,
+                height: 400
+            });
+        });
+    }
+    // JS Solitaire 아이콘 클릭 시 창 생성
+    const solitaireIcon = document.getElementById('solitaire-icon');
+    if (solitaireIcon) {
+        solitaireIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            createWindow({
+                title: 'JS Solitaire',
+                iframeSrc: './js-solitaire/index.html',
+                iconUrl: './image/solitaire.png',
+                width: 660,
+                height: 470
+            });
+        });
+    }
 });
 
 </script>
