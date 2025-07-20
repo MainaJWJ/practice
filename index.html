@@ -87,9 +87,50 @@
             <img src="./image/minesweeper.png" alt="Minesweeper">
             <span>Minesweeper</span>
         </a>
+        <a href="#" class="desktop-icon" id="screensaver-icon" data-title="Pipe Screensaver" data-icon-url="./image/protect.png">
+            <img src="./image/protect.png" alt="Pipe Screensaver">
+            <span>Pipe Screensaver</span>
+        </a>
+        <a href="#" class="desktop-icon" id="flower-screensaver-icon" data-title="Flower Screensaver" data-icon-url="./image/protect.png">
+            <img src="./image/protect.png" alt="Flower Screensaver">
+            <span>Flower Screensaver</span>
+        </a>
     </div>
 
     <div id="webamp-container"></div>
+
+    <!-- 화면보호기 오버레이 (초기에는 숨김) -->
+    <div id="screensaver-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:black;">
+      <iframe id="screensaver-iframe" src="" style="width:100vw; height:100vh; border:none;"></iframe>
+    </div>
+    <!-- Flower 화면보호기 오버레이 (초기에는 숨김) -->
+    <div id="flower-screensaver-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:black;">
+      <iframe id="flower-screensaver-iframe" src="" style="width:100vw; height:100vh; border:none;"></iframe>
+    </div>
+    <!-- Turn Off Computer 오버레이 (iframe 없이 직접 구현) -->
+    <div id="turnoff-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25);">
+      <div id="turnoff-dialog" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:#2361b1; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.4); width:350px; padding:0 0 24px 0; box-sizing:border-box; border:2px solid #003399; font-family:Tahoma,Verdana,Arial,sans-serif;">
+        <div style="background:linear-gradient(to bottom,#2361b1 60%,#0a3a7a 100%); color:#fff; font-size:22px; font-weight:bold; padding:16px 16px 8px 16px; border-radius:8px 8px 0 0; display:flex; align-items:center; justify-content:space-between;">
+          Turn off computer
+          <img src="./image/windowslogo.png" alt="Windows XP Logo" style="width:38px;height:38px;margin-left:8px;">
+        </div>
+        <div style="display:flex; justify-content:space-around; margin:32px 0 16px 0;">
+          <div class="turnoff-btn" id="standby-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;">
+            <img src="./image/logoff.png" alt="Stand By" style="width:48px;height:48px;margin-bottom:8px;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:2px solid #fff;transition:border 0.2s;">
+            <span style="color:#fff;font-size:15px;text-shadow:1px 1px 2px #003399;margin-top:2px;">Log Off</span>
+          </div>
+          <div class="turnoff-btn" id="turnoff-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;">
+            <img src="./image/turnoff.png" alt="Turn Off" style="width:48px;height:48px;margin-bottom:8px;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:2px solid #fff;transition:border 0.2s;">
+            <span style="color:#fff;font-size:15px;text-shadow:1px 1px 2px #003399;margin-top:2px;">Turn Off</span>
+          </div>
+          <div class="turnoff-btn" id="restart-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;">
+            <img src="./image/restart.png" alt="Restart" style="width:48px;height:48px;margin-bottom:8px;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:2px solid #fff;transition:border 0.2s;">
+            <span style="color:#fff;font-size:15px;text-shadow:1px 1px 2px #003399;margin-top:2px;">Restart</span>
+          </div>
+        </div>
+        <button id="turnoff-cancel-btn" style="position:absolute;right:18px;bottom:12px;background:#fff;color:#003399;border:1.5px solid #003399;border-radius:4px;font-size:15px;padding:2px 18px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,0.10);transition:background 0.2s,color 0.2s;">Cancel</button>
+      </div>
+    </div>
 
     <div class="start-menu" id="startMenu">
 <div class="start-menu-header">
@@ -559,6 +600,10 @@ win.querySelectorAll('.resizer').forEach(resizer => {
         }
         linkElement.appendChild(iconElement);
         linkElement.appendChild(textWrapper);
+        // Turn Off Computer 메뉴에만 id 부여
+        if (linkData.name === 'Turn Off Computer') {
+            linkElement.id = 'turnoff-menu-item';
+        }
         linkElement.addEventListener('click', (e) => {
             e.preventDefault();
             if (linkData.url && linkData.url !== '#') {
@@ -566,6 +611,11 @@ win.querySelectorAll('.resizer').forEach(resizer => {
                 startMenu.classList.remove('show');
             }
             if (linkData.type === 'all') alert('모든 프로그램 기능은 아직 구현되지 않았습니다.');
+            // Turn Off Computer 메뉴 클릭 시 오버레이 표시
+            if (linkData.name === 'Turn Off Computer') {
+                const overlay = document.getElementById('turnoff-overlay');
+                overlay.style.display = 'block';
+            }
         });
         return linkElement;
     }
@@ -775,6 +825,88 @@ muteCheckbox.addEventListener('change', (e) => {
         });
         // 싱글클릭 선택, 더블클릭 실행을 위해 기존 click 이벤트도 유지
     }
+
+    // 화면보호기 아이콘 클릭 시 pipes/index.html을 새 창이 아니라 오버레이로 전체화면 표시
+    const screensaverIcon = document.getElementById('screensaver-icon');
+    if (screensaverIcon) {
+        screensaverIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            // 오버레이 보이기 및 iframe src 설정
+            const overlay = document.getElementById('screensaver-overlay');
+            const iframe = document.getElementById('screensaver-iframe');
+            overlay.style.display = 'block';
+            iframe.src = './pipes/index.html';
+            // F11 전체화면 진입 코드 제거 (사이트 내에서만 전체화면)
+        });
+    }
+    // 입력 감지 시 오버레이 및 전체화면 해제 (postMessage 방식)
+    window.addEventListener('message', function(event) {
+        if (event.data === 'exitScreensaver') {
+            const overlay = document.getElementById('screensaver-overlay');
+            const iframe = document.getElementById('screensaver-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        }
+    });
+
+    // Flower 화면보호기 아이콘 클릭 시 flower/index.html을 오버레이로 전체화면 표시
+    const flowerScreensaverIcon = document.getElementById('flower-screensaver-icon');
+    if (flowerScreensaverIcon) {
+        flowerScreensaverIcon.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            const overlay = document.getElementById('flower-screensaver-overlay');
+            const iframe = document.getElementById('flower-screensaver-iframe');
+            overlay.style.display = 'block';
+            iframe.src = './flower/index.html';
+        });
+    }
+    // 입력 감지 시 오버레이 해제 (postMessage 방식)
+    window.addEventListener('message', function(event) {
+        if (event.data === 'exitFlowerScreensaver') {
+            const overlay = document.getElementById('flower-screensaver-overlay');
+            const iframe = document.getElementById('flower-screensaver-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+        }
+    });
+
+    // Turn Off Computer 메뉴 클릭 시 오버레이로 turnoff-dialog 표시 (iframe 코드 제거)
+    const turnOffButton = document.getElementById('turnOffButton');
+    if (turnOffButton) {
+        turnOffButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const overlay = document.getElementById('turnoff-overlay');
+            overlay.style.display = 'block';
+        });
+    }
+    const taskbarTurnoffContainer = document.getElementById('taskbar-turnoff-container');
+    if (taskbarTurnoffContainer) {
+        taskbarTurnoffContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const overlay = document.getElementById('turnoff-overlay');
+            overlay.style.display = 'block';
+        });
+    }
+
+    // 오버레이 버튼 이벤트 등록 (DOMContentLoaded 내에 추가)
+    document.getElementById('turnoff-cancel-btn').onclick = () => {
+        document.getElementById('turnoff-overlay').style.display = 'none';
+    };
+    document.getElementById('standby-btn').onclick = () => alert('Stand By (Demo)');
+    document.getElementById('turnoff-btn').onclick = () => alert('Turn Off (Demo)');
+    document.getElementById('restart-btn').onclick = () => alert('Restart (Demo)');
+
+    // 오버레이 입력 감지 시 닫기 (Cancel 버튼은 turnoff.html에서 window.close()로 처리)
+    window.addEventListener('message', function(event) {
+        if (event.data === 'exitTurnoffOverlay') {
+            const overlay = document.getElementById('turnoff-overlay');
+            overlay.style.display = 'none';
+        }
+    });
 });
 
 </script>
