@@ -975,5 +975,33 @@ button.start-button:focus {
     outline: none;
 }
 
+/* Turn Off Computer 오버레이 버튼 이미지 효과만 남기고 주변부 노란색 효과 제거 */
+#standby-btn:hover,
+#turnoff-btn:hover,
+#restart-btn:hover,
+#standby-btn:active,
+#turnoff-btn:active,
+#restart-btn:active {
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+#standby-btn img,
+#turnoff-btn img,
+#restart-btn img {
+    transition: filter 0.1s;
+}
+#standby-btn:hover img,
+#turnoff-btn:hover img,
+#restart-btn:hover img {
+    filter: brightness(1.25);
+}
+#standby-btn:active img,
+#turnoff-btn:active img,
+#restart-btn:active img {
+    filter: brightness(0.5);
+}
+
 
 
