@@ -18,9 +18,7 @@
     <script src="webamp/webamp-manager.js"></script>
 </head>
 
-<body>
-
-    <body id="desktop-body">
+<body id="desktop-body">
             <div id="desktop-area">
 
     <div class="desktop-icons">
@@ -49,9 +47,10 @@
         </a>
 
 
-        <a href="./texteditor.html" class="desktop-icon" data-title="문서편집기"  data-icon-url="./image/texteditor.png" data-open-mode="window">
-            <img src="./image/texteditor.png" alt="문서편집기">
-            <span>문서편집기</span>
+        <a href="./texteditor.html" class="desktop-icon" data-title="MSWord"  data-icon-url="./image/texteditor.png" data-open-mode="window">
+            <img src="./image/MSWord.png" alt="MSWord">
+            <span>Microsoft Word
+            </span>
 
 
             <!-- Webamp 아이콘 추가 -->
@@ -63,9 +62,9 @@
 
 
 
-            <a href="./minipaint/index.html" class="desktop-icon" data-title="포토샵"  data-icon-url="./image/paint.png" data-open-mode="window">
-                <img src="./image/paint.png" alt="포토샵">
-                <span>포토샵</span>
+            <a href="./minipaint/index.html" class="desktop-icon" data-title="포토샵"  data-icon-url="./image/Photoshop.png" data-open-mode="window">
+                <img src="./image/Photoshop.png" alt="포토샵">
+                <span>Adobe Photoshop</span>
             </a>
         
 
@@ -99,6 +98,7 @@
 
     <div id="webamp-container"></div>
 
+    <div id="grayscale-overlay"></div>
     <!-- 화면보호기 오버레이 (초기에는 숨김) -->
     <div id="screensaver-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:black;">
       <iframe id="screensaver-iframe" src="" style="width:100vw; height:100vh; border:none;"></iframe>
@@ -107,35 +107,43 @@
     <div id="flower-screensaver-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:black;">
       <iframe id="flower-screensaver-iframe" src="" style="width:100vw; height:100vh; border:none;"></iframe>
     </div>
-    <!-- Turn Off Computer 오버레이 (iframe 없이 직접 구현) -->
-    <div id="turnoff-overlay" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25);">
-      <div id="turnoff-dialog" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:#2361b1; border-radius:0; box-shadow:0 8px 32px rgba(0,0,0,0.4); width:350px; box-sizing:border-box; border:2px solid #003399; font-family:Tahoma,Verdana,Arial,sans-serif; padding:0;">
-        <!-- 상단 -->
-        <div style="background:#263593; color:#fff; font-size:22px; font-weight:400; font-family:'Segoe UI', Arial, Tahoma, Verdana, sans-serif; letter-spacing:0.5px; padding:6px 16px 3px 16px; border-radius:0; display:flex; align-items:center; justify-content:space-between; border-bottom:0; min-height:38px;">
-          <span style="display:flex;align-items:center;height:100%;line-height:1;">Turn off computer</span>
-          <img src="./image/windowslogo.png" alt="Windows XP Logo" style="width:38px;height:38px;margin-left:8px;">
+    <!-- Shutdown Prompt Overlay -->
+    <div id="shutdown-prompt-overlay">
+        <div id="shutdown-prompt">
+            <div id="shutdown-prompt-header">
+                <span>Turn off computer</span>
+                <img src="./image/windowslogo.png" id="logo-small"/>
+            </div>
+            <div id="shutdown-prompt-header-stripe"></div>
+            <div id="shutdown-prompt-options">
+                <div class="shutdown-prompt-option">
+                    <img src="image/standby.png" id="standby-button" class="img-button"/>
+                    <span>Stand By</span>
+                </div>
+                <div class="shutdown-prompt-option">
+                    <img src="image/turnoff.png" id="shutdown-button" class="img-button"/>
+                    <span>Turn Off</span>
+                </div>
+                <div class="shutdown-prompt-option">
+                    <img src="image/restart.png" id="restart-button" class="img-button"/>
+                    <span>Restart</span>
+                </div>
+            </div>
+            <div id="shutdown-prompt-footer">
+                <div id="shutdown-cancel-button-outline">
+                    <div id="shutdown-cancel-button-border">
+                        <div id="shutdown-cancel-button">
+                            Cancel
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- 중단 -->
-        <div style="height:2px; width:100%; background:linear-gradient(to right, #3960b6 0%, #d5e4f8 50%, #3960b6 100%);"></div>
-        <div style="display:flex; justify-content:center; margin:0; background:linear-gradient(to right, #5A7DDE 0%, #98b6f5 50%, #5A7DDE 100%); padding:31px 0 23px 0; border-bottom:2px solid #174a8b; border-radius:0;">
-          <div class="turnoff-btn" id="standby-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;margin-right:30px;">
-            <img src="./image/logoff.png" alt="Stand By" style="width:37px;height:37px;margin-bottom:8px;border-radius:4px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:0;transition:border 0.2s;">
-            <span style="color:#fff;font-size:14px;font-weight:bold;margin-top:2px;"><span style='text-decoration:underline'>L</span>og Off</span>
-          </div>
-          <div class="turnoff-btn" id="turnoff-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;margin:0;">
-            <img src="./image/turnoff.png" alt="Turn Off" style="width:37px;height:37px;margin-bottom:8px;border-radius:4px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:0;transition:border 0.2s;">
-            <span style="color:#fff;font-size:14px;font-weight:bold;margin-top:2px;"><span style='text-decoration:underline'>T</span>urn Off</span>
-          </div>
-          <div class="turnoff-btn" id="restart-btn" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;width:80px;margin-left:30px;">
-            <img src="./image/restart.png" alt="Restart" style="width:37px;height:37px;margin-bottom:8px;border-radius:4px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:0;transition:border 0.2s;">
-            <span style="color:#fff;font-size:14px;font-weight:bold;margin-top:2px;"><span style='text-decoration:underline'>R</span>estart</span>
-          </div>
-        </div>
-        <!-- 하단 -->
-        <div style="background:#263593; border-radius:0; padding:14px 0 8px 0; display:flex; justify-content:flex-end; align-items:center;">
-          <button id="turnoff-cancel-btn" style="margin-right:18px;background:#fff;color:#003399;border:1.5px solid #003399;border-radius:4px;font-size:15px;padding:2px 18px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,0.10);transition:background 0.2s,color 0.2s;">Cancel</button>
-        </div>
-      </div>
+    </div>
+    
+    <!-- logon 오버레이 (최상단, 진입 시 표시) -->
+    <div id="logon-overlay" style="display:block; position:fixed; z-index:100000; left:0; top:0; width:100vw; height:100vh; background:black;">
+      <iframe id="logon-iframe" src="logon.html" style="width:100vw; height:100vh; border:none;"></iframe>
     </div>
 
     <div class="start-menu" id="startMenu">
@@ -752,45 +760,6 @@ muteCheckbox.addEventListener('change', (e) => {
     setInterval(updateClock, 1000);
     renderStartMenu();
 
-    // startup.wav 페이지 로드 시마다 재생 기능
-    function playStartupSound() {
-        console.log('startup.wav 재생 시도...');
-        console.log('현재 볼륨:', globalVolume);
-        console.log('음소거 상태:', isGlobalMuted);
-        
-        const startupAudio = new Audio('./startup.wav');
-        startupAudio.volume = globalVolume;
-        startupAudio.muted = isGlobalMuted;
-        
-        // 오디오 로드 완료 후 재생
-        startupAudio.addEventListener('canplaythrough', () => {
-            console.log('startup.wav 로드 완료, 재생 시작');
-            startupAudio.play().then(() => {
-                console.log('startup.wav 재생 성공');
-            }).catch(error => {
-                console.log('startup.wav 재생 실패:', error);
-            });
-        });
-        
-        startupAudio.addEventListener('error', (error) => {
-            console.log('startup.wav 로드 실패:', error);
-        });
-        
-        // 오디오 로드 시작
-        startupAudio.load();
-    }
-
-    // 사용자 상호작용 후 startup.wav 재생
-    let startupSoundPlayed = false;
-    
-    // 사용자가 페이지를 클릭했을 때 startup.wav 재생
-    document.addEventListener('click', () => {
-        if (!startupSoundPlayed) {
-            playStartupSound();
-            startupSoundPlayed = true;
-        }
-    }, { once: true });
-
     // 폴더 창에서 전송된 메시지 처리
     window.addEventListener('message', (event) => {
         if (event.data.type === 'createWindow') {
@@ -880,40 +849,55 @@ muteCheckbox.addEventListener('change', (e) => {
         }
     });
 
-    // Turn Off Computer 메뉴 클릭 시 오버레이로 turnoff-dialog 표시 (iframe 코드 제거)
-    const turnOffButton = document.getElementById('turnOffButton');
-    if (turnOffButton) {
-        turnOffButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const overlay = document.getElementById('turnoff-overlay');
-            overlay.style.display = 'block';
-        });
-    }
-    const taskbarTurnoffContainer = document.getElementById('taskbar-turnoff-container');
-    if (taskbarTurnoffContainer) {
-        taskbarTurnoffContainer.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const overlay = document.getElementById('turnoff-overlay');
-            overlay.style.display = 'block';
-        });
+    // ShutdownPrompt 클래스 정의 추가
+    class ShutdownPrompt {
+        static SHUTDOWN_PROMPT_SHOW_EVENT_ID = "shutdown-prompt-show";
+        static SHUTDOWN_PROMPT_HIDE_EVENT_ID = "shutdown-prompt-hide";
+        constructor() {
+            this.active = false;
+            document.addEventListener("keydown", (event) => this.onKeyEvent(event));
+            const shutdownOptionsButton = document.getElementById("turnOffButton");
+            shutdownOptionsButton.addEventListener("click", () => this.showShutdownPrompt());
+            const cancelButton = document.querySelector("#shutdown-cancel-button");
+            cancelButton.addEventListener("click", () => this.hideShutdownPrompt());
+            const standbyButton = document.querySelector("#standby-button");
+            standbyButton.addEventListener("click", () =>  this.hideShutdownPrompt());
+            const shutdownButton = document.querySelector("#shutdown-button");
+            shutdownButton.addEventListener("click", () =>  this.hideShutdownPrompt());
+            const restartButton = document.querySelector("#restart-button");
+            restartButton.addEventListener("click", () =>  this.hideShutdownPrompt());
+        }
+        showShutdownPrompt() {
+            let overlay = document.querySelector("#shutdown-prompt-overlay");
+            overlay.classList.add("active");
+            document.getElementById('grayscale-overlay').classList.add('active'); // active 클래스 추가
+            this.active = true;
+        }
+        hideShutdownPrompt() {
+            let overlay = document.querySelector("#shutdown-prompt-overlay");
+            overlay.classList.remove("active");
+            document.getElementById('grayscale-overlay').classList.remove('active'); // active 클래스 제거
+            this.active = false;
+        }
+        onKeyEvent(event) {
+            if (this.active && event.key === "Escape") {
+                this.hideShutdownPrompt();
+            }
+        }
     }
 
-    // 오버레이 버튼 이벤트 등록 (DOMContentLoaded 내에 추가)
-    document.getElementById('turnoff-cancel-btn').onclick = () => {
-        document.getElementById('turnoff-overlay').style.display = 'none';
-    };
-    document.getElementById('standby-btn').onclick = () => {};
-    document.getElementById('turnoff-btn').onclick = () => {
-        const shutdownAudio = new Audio('./shutdown.wav');
-        shutdownAudio.play();
-    };
-    document.getElementById('restart-btn').onclick = () => {};
+    const shutdownPrompt = new ShutdownPrompt();
 
-    // 오버레이 입력 감지 시 닫기 (Cancel 버튼은 turnoff.html에서 window.close()로 처리)
+    // ▼▼▼ logon.html 인증 성공 시 오버레이 닫기 및 startup.wav 재생 ▼▼▼
     window.addEventListener('message', function(event) {
-        if (event.data === 'exitTurnoffOverlay') {
-            const overlay = document.getElementById('turnoff-overlay');
+        if (event.data === 'logonSuccess') {
+            const overlay = document.getElementById('logon-overlay');
+            const iframe = document.getElementById('logon-iframe');
             overlay.style.display = 'none';
+            iframe.src = '';
+            // 로그인 성공 시 startup.wav 재생
+            const startupAudio = new Audio('./startup.wav');
+            startupAudio.play();
         }
     });
 });
@@ -922,5 +906,4 @@ muteCheckbox.addEventListener('change', (e) => {
 
 </body>
 
-</html>
 </html>

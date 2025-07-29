@@ -19,12 +19,6 @@ body {
 
 /* 전체 페이지 배경 및 기본 여백 */
 #desktop-body {
-    background-color: #5A7EDC;
-    background-image: url('./image/wallpaper.bmp');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center center;
-    background-attachment: fixed;
     padding: 20px;
     overflow: hidden; /* 이제 이 ID를 가진 body에만 적용됨 */
         /* ▼▼▼ 텍스트 선택(드래그) 방지 코드 추가 ▼▼▼ */
@@ -910,6 +904,12 @@ button.start-button:focus {
     left: 0;
     width: 100%;
     height: calc(100% - 30px); /* 작업 표시줄 높이를 제외한 전체 영역 */
+    background-color: #5A7EDC; /* 배경색 직접 지정 */
+    background-image: url('./image/wallpaper.bmp');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
 }
 
 
@@ -975,5 +975,167 @@ button.start-button:focus {
     outline: none;
 }
 
+/* Shutdown prompt button image effects */
+.img-button {
+    transition: filter 0.1s ease-in-out;
+}
+.img-button:hover {
+    filter: brightness(1.25);
+}
+.img-button:active {
+    filter: brightness(0.5);
+}
 
+#shutdown-prompt-overlay {
+    display: none;
+    position: absolute; /* fixed에서 absolute로 변경 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(64, 64, 64, 0.1);
+    z-index: 99999;
+}
 
+#shutdown-prompt-overlay.active {
+    display: flex;
+    justify-content: center;
+    /* align-items: center; 제거 */
+}
+
+#shutdown-prompt {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(to right, #5A7EDC, #90a9e9, #5A7EDC);
+    border: 1px solid black;
+    width: 320px;
+    height: 200px;
+    margin-top: 26vh; /* 수직 위치 조정을 위해 추가 */
+}
+
+#shutdown-prompt-header {
+    width: 100%;
+    height: 20%;
+    background-color: #00309C;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+#shutdown-prompt-header span {
+    font-size: 18px;
+    text-shadow: 0px 0px white;
+}
+
+#shutdown-prompt-header > *:first-child {
+    margin-left: 10px;
+}
+
+#shutdown-prompt-header > *:last-child {
+    margin-right: 10px;
+}
+
+#logo-small {
+    height: 30px;
+    width: 30px;
+}
+
+#shutdown-prompt-header-stripe {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(45deg, #466DCD, #C7DDFF, #B0C9F7, #5A7EDC);
+}
+
+#shutdown-prompt-options {
+    font-size: 12px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    color: white;
+}
+
+.shutdown-prompt-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.shutdown-prompt-option > *:first-child {
+    margin-bottom: 8px;
+}
+
+.shutdown-prompt-option .img-button {
+    height: 32px;
+}
+
+#shutdown-prompt-footer {
+    width: 100%;
+    height: 20%;
+    background-color: #00309C;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+#shutdown-prompt-footer > *:last-child {
+    margin-right: 10px;
+}
+
+#shutdown-cancel-button-outline {
+    width: min-content;
+    height: min-content;
+    padding: 1px;
+    border-radius: 2px;
+    background: linear-gradient(170deg, #043292 35%, #C3C3DF);
+}
+
+#shutdown-cancel-button-border {
+    width: min-content;
+    height: min-content;
+    padding: 1px;
+    border: solid 1px #003C74;
+    border-radius: 3px;
+    background: linear-gradient(#FFFFFF, #D6D0C5);
+}
+
+#shutdown-cancel-button-border:hover {
+    background: linear-gradient(#FFF0CF, #E59700);
+}
+
+#shutdown-cancel-button-border:active {
+    background: linear-gradient(#CEE7FF, #6982EE);
+}
+
+#shutdown-cancel-button {
+    color: black;
+    font-size: 12px;
+    outline: none;
+    border: none;
+    padding: 0px 8px 0px 8px;
+    background: linear-gradient(180deg, #F7F3EF, #E5F0E2 90%, #D6D3C6 95%);
+    text-shadow: none;
+}
+
+#grayscale-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.1);
+    backdrop-filter: grayscale(90%);
+    z-index: 99998; /* 종료 창 바로 아래 */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2s ease-in-out; /* 2초 동안 부드럽게 */
+}
+
+#grayscale-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
