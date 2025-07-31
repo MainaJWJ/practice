@@ -1,0 +1,9 @@
+{
+  "landColor": "0x629265",
+  "fogColor": "0xf7d9aa",
+  "objects": [
+    { "type": "tree", "count": 300 },
+    { "type": "flower", "count": 200 },
+    { "type": "building", "count": 100 }
+  ]
+}

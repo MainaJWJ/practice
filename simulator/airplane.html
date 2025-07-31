@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비행 시뮬레이터</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <aside id="controls">
+        <p><b>조작법</b></p>
+        <p>위 화살표: 기수 내리기</p>
+        <p>아래 화살표: 기수 올리기</p>
+        <p>왼쪽 화살표: 좌회전</p>
+        <p>오른쪽 화살표: 우회전</p>
+        <p>스페이스바: 부스트</p>
+        <p><b>기체 변경</b></p>
+        <button onclick="changeAirplane('b-747')">B-747</button>
+        <button onclick="changeAirplane('b-757')">B-757</button>
+        <button onclick="changeAirplane('cessna')">Cessna</button>
+        <p><b>지형 변경</b></p>
+        <button onclick="changeWorld('default')">기본</button>
+        <button onclick="changeWorld('desert')">사막</button>
+    </aside>
+    <main id="world"></main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/86/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.86.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.86.0/examples/js/loaders/MTLLoader.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

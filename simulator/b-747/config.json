@@ -1,0 +1,28 @@
+{
+  "model": {
+    "mtl": "11803_Airplane_v1_l1.mtl",
+    "obj": "11803_Airplane_v1_l1.obj",
+    "rotation": {
+      "x": 1.5707963267948966,
+      "y": 3.141592653589793,
+      "z": 3.141592653589793
+    },
+    "scale": 0.0125
+  },
+  "performance": {
+    "speed": 3,
+    "turnSensitivity": 0.025,
+    "boostMultiplier": 2
+  },
+  "combat": {
+    "attack": 10,
+    "defense": 10,
+    "health": 100,
+    "ammo": {
+      "weapon1": 100,
+      "weapon2": 50,
+      "weapon3": 10
+    }
+  },
+  "future_expansion": {}
+}
