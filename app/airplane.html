@@ -37,8 +37,10 @@
     </div>
     <div id="world"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/86/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.86.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.86.0/examples/js/loaders/MTLLoader.js"></script>
     <script>
-        // Colors object: Holds color values for materials to keep them consistent and easy to change.
+        // 색상 객체: 재료의 색상 값을 일관성 있게 유지하고 쉽게 변경할 수 있도록 합니다.
         var Colors = {
             red: 0xf25346,
             yellow: 0xedeb27,
@@ -52,26 +54,26 @@
             lightgreen: 0x629265,
         };
 
-        // SCENE, CAMERA, RENDERER, and other global variables for the Three.js world.
+        // SCENE, CAMERA, RENDERER 및 Three.js 월드의 기타 전역 변수.
         var scene, camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH, renderer, container;
 
-        // Initializes the Three.js scene, camera, and renderer.
+        // Three.js 씬, 카메라, 렌더러를 초기화합니다.
         function createScene() {
-            // Get the window's height and width to set up the aspect ratio and renderer size.
+            // 창의 높이와 너비를 가져와 종횡비와 렌더러 크기를 설정합니다.
             HEIGHT = window.innerHeight;
             WIDTH = window.innerWidth;
 
-            // Create the scene object.
+            // 씬 객체를 생성합니다.
             scene = new THREE.Scene();
 
-            // Add fog to the scene for a sense of depth. The color matches the background.
+            // 깊이감을 위해 씬에 안개를 추가합니다. 색상은 배경과 일치합니다.
             scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
 
-            // Set up the camera's properties.
+            // 카메라의 속성을 설정합니다.
             aspectRatio = WIDTH / HEIGHT;
-            fieldOfView = 60; // Angle of view in degrees.
-            nearPlane = 1; // The closest an object can be to the camera to be rendered.
-            farPlane = 10000; // The farthest an object can be from the camera to be rendered.
+            fieldOfView = 60; // 시야각 (도).
+            nearPlane = 1; // 렌더링될 카메라에 가장 가까운 객체.
+            farPlane = 10000; // 렌더링될 카메라에서 가장 먼 객체.
             camera = new THREE.PerspectiveCamera(
                 fieldOfView,
                 aspectRatio,
@@ -79,53 +81,53 @@
                 farPlane
             );
             
-            // Set the camera's initial position.
+            // 카메라의 초기 위치를 설정합니다.
             camera.position.x = 0;
             camera.position.z = 200;
             camera.position.y = 100;
 
-            // Create the WebGL renderer.
+            // WebGL 렌더러를 생성합니다.
             renderer = new THREE.WebGLRenderer({
-                alpha: true, // Allows for a transparent background.
-                antialias: true // Smooths out the edges of objects (can be performance-intensive).
+                alpha: true, // 투명한 배경을 허용합니다.
+                antialias: true // 객체의 가장자리를 부드럽게 합니다 (성능 집약적일 수 있음).
             });
 
-            // Set the size of the renderer to match the window size.
+            // 렌더러의 크기를 창 크기와 일치하도록 설정합니다.
             renderer.setSize(WIDTH, HEIGHT);
-            // Enable shadow mapping in the renderer.
+            // 렌더러에서 그림자 매핑을 활성화합니다.
             renderer.shadowMap.enabled = true;
 
-            // Get the 'world' div from the HTML and append the renderer's canvas element to it.
+            // HTML에서 'world' div를 가져와 렌더러의 캔버스 요소를 추가합니다.
             container = document.getElementById('world');
             container.appendChild(renderer.domElement);
 
-            // Add an event listener to handle window resizing.
+            // 창 크기 조정 이벤트를 처리하기 위한 이벤트 리스너를 추가합니다.
             window.addEventListener('resize', handleWindowResize, false);
         }
 
-        // Handles window resize events to keep the scene proportional.
+        // 씬의 비율을 유지하기 위해 창 크기 조정 이벤트를 처리합니다.
         function handleWindowResize() {
             HEIGHT = window.innerHeight;
             WIDTH = window.innerWidth;
             renderer.setSize(WIDTH, HEIGHT);
             camera.aspect = WIDTH / HEIGHT;
-            camera.updateProjectionMatrix(); // Must be called after changing camera properties.
+            camera.updateProjectionMatrix(); // 카메라 속성 변경 후 호출해야 합니다.
         }
 
-        // LIGHTS
+        // 조명
         var hemisphereLight, shadowLight;
 
-        // Sets up the lights for the scene.
+        // 씬의 조명을 설정합니다.
         function createLights() {
-            // Hemisphere light provides a soft, ambient light from above and below.
+            // 반구형 조명은 위아래에서 부드러운 주변 조명을 제공합니다.
             hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9)
             
-            // Directional light simulates sunlight, casting parallel rays.
+            // 방향성 조명은 평행 광선을 투사하여 햇빛을 시뮬레이션합니다.
             shadowLight = new THREE.DirectionalLight(0xffffff, .9);
-            shadowLight.position.set(150, 350, 350); // Position the light.
-            shadowLight.castShadow = true; // Enable this light to cast shadows.
+            shadowLight.position.set(150, 350, 350); // 조명 위치 설정.
+            shadowLight.castShadow = true; // 이 조명이 그림자를 드리우도록 활성화합니다.
 
-            // Define the area where shadows will be visible.
+            // 그림자가 보이는 영역을 정의합니다.
             shadowLight.shadow.camera.left = -400;
             shadowLight.shadow.camera.right = 400;
             shadowLight.shadow.camera.top = 400;
@@ -133,168 +135,62 @@
             shadowLight.shadow.camera.near = 1;
             shadowLight.shadow.camera.far = 1000;
 
-            // Set the resolution of the shadow map.
+            // 그림자 맵의 해상도를 설정합니다.
             shadowLight.shadow.mapSize.width = 2048;
             shadowLight.shadow.mapSize.height = 2048;
 
-            // Add the lights to the scene.
+            // 씬에 조명을 추가합니다.
             scene.add(hemisphereLight);
             scene.add(shadowLight);
         }
 
-        // AirPlane object definition.
-        var AirPlane = function () {
-            // The 'mesh' property will hold all the parts of the airplane.
+        // 비행기 객체 정의.
+        var AirPlane = function (callback) {
             this.mesh = new THREE.Object3D();
+            var self = this; // 'this' 컨텍스트를 유지합니다.
 
-            // Create the main body (cockpit) of the plane.
-            var geomCockpit = new THREE.BoxGeometry(80, 50, 50, 1, 1, 1);
-            var matCockpit = new THREE.MeshPhongMaterial({ color: Colors.red, shading: THREE.FlatShading });
-            // Deform the cockpit geometry to make it more airplane-like.
-            geomCockpit.vertices[4].y -= 10;
-            geomCockpit.vertices[4].z += 20;
-            geomCockpit.vertices[5].y -= 10;
-            geomCockpit.vertices[5].z -= 20;
-            geomCockpit.vertices[6].y += 30;
-            geomCockpit.vertices[6].z += 20;
-            geomCockpit.vertices[7].y += 30;
-            geomCockpit.vertices[7].z -= 20;
-            var cockpit = new THREE.Mesh(geomCockpit, matCockpit);
-            cockpit.castShadow = true;
-            cockpit.receiveShadow = true;
-            this.mesh.add(cockpit);
-
-            // Create the engine.
-            var geomEngine = new THREE.BoxGeometry(20, 50, 50, 1, 1, 1);
-            var matEngine = new THREE.MeshPhongMaterial({ color: Colors.white, shading: THREE.FlatShading });
-            var engine = new THREE.Mesh(geomEngine, matEngine);
-            engine.position.x = 40;
-            engine.castShadow = true;
-            engine.receiveShadow = true;
-            this.mesh.add(engine);
-
-            // Create the tail.
-            var geomTailPlane = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
-            var matTailPlane = new THREE.MeshPhongMaterial({ color: Colors.red, shading: THREE.FlatShading });
-            var tailPlane = new THREE.Mesh(geomTailPlane, matTailPlane);
-            tailPlane.position.set(-35, 25, 0);
-            tailPlane.castShadow = true;
-            tailPlane.receiveShadow = true;
-            this.mesh.add(tailPlane);
-
-            // Create the wings.
-            var geomSideWing = new THREE.BoxGeometry(40, 4, 150, 1, 1, 1);
-            var matSideWing = new THREE.MeshPhongMaterial({ color: Colors.red, shading: THREE.FlatShading });
-            var sideWingTop = new THREE.Mesh(geomSideWing, matSideWing);
-            var sideWingBottom = new THREE.Mesh(geomSideWing, matSideWing);
-            sideWingTop.castShadow = true;
-            sideWingTop.receiveShadow = true;
-            sideWingBottom.castShadow = true;
-            sideWingBottom.receiveShadow = true;
-            sideWingTop.position.set(20, 12, 0);
-            sideWingBottom.position.set(20, -3, 0);
-            this.mesh.add(sideWingTop);
-            this.mesh.add(sideWingBottom);
-
-            // Create the windshield.
-            var geomWindshield = new THREE.BoxGeometry(3, 15, 20, 1, 1, 1);
-            var matWindshield = new THREE.MeshPhongMaterial({ color: Colors.white, transparent: true, opacity: .3, shading: THREE.FlatShading });;
-            var windshield = new THREE.Mesh(geomWindshield, matWindshield);
-            windshield.position.set(5, 27, 0);
-            windshield.castShadow = true;
-            windshield.receiveShadow = true;
-            this.mesh.add(windshield);
-
-            // Create the propeller.
-            var geomPropeller = new THREE.BoxGeometry(20, 10, 10, 1, 1, 1);
-            geomPropeller.vertices[4].y -= 5;
-            geomPropeller.vertices[4].z += 5;
-            geomPropeller.vertices[5].y -= 5;
-            geomPropeller.vertices[5].z -= 5;
-            geomPropeller.vertices[6].y += 5;
-            geomPropeller.vertices[6].z += 5;
-            geomPropeller.vertices[7].y += 5;
-            geomPropeller.vertices[7].z -= 5;
-            var matPropeller = new THREE.MeshPhongMaterial({ color: Colors.brown, shading: THREE.FlatShading });
-            this.propeller = new THREE.Mesh(geomPropeller, matPropeller);
-            this.propeller.castShadow = true;
-            this.propeller.receiveShadow = true;
-
-            // Create the propeller blades.
-            var geomBlade1 = new THREE.BoxGeometry(1, 100, 10, 1, 1, 1);
-            var geomBlade2 = new THREE.BoxGeometry(1, 10, 100, 1, 1, 1);
-            var matBlade = new THREE.MeshPhongMaterial({ color: Colors.brownDark, shading: THREE.FlatShading });
-            var blade1 = new THREE.Mesh(geomBlade1, matBlade);
-            blade1.position.set(8, 0, 0);
-            blade1.castShadow = true;
-            blade1.receiveShadow = true;
-            var blade2 = new THREE.Mesh(geomBlade2, matBlade);
-            blade2.position.set(8, 0, 0);
-            blade2.castShadow = true;
-            blade2.receiveShadow = true;
-            this.propeller.add(blade1, blade2);
-            this.propeller.position.set(50, 0, 0);
-            this.mesh.add(this.propeller);
-
-            // Create the landing gear.
-            var wheelProtecGeom = new THREE.BoxGeometry(30, 15, 10, 1, 1, 1);
-            var wheelProtecMat = new THREE.MeshPhongMaterial({ color: Colors.white, shading: THREE.FlatShading });
-            var wheelProtecR = new THREE.Mesh(wheelProtecGeom, wheelProtecMat);
-            wheelProtecR.position.set(25, -20, 25);
-            this.mesh.add(wheelProtecR);
-
-            var wheelTireGeom = new THREE.BoxGeometry(24, 24, 4);
-            var wheelTireMat = new THREE.MeshPhongMaterial({ color: Colors.brownDark, shading: THREE.FlatShading });
-            var wheelTireR = new THREE.Mesh(wheelTireGeom, wheelTireMat);
-            wheelTireR.position.set(25, -28, 25);
-
-            var wheelAxisGeom = new THREE.BoxGeometry(10, 10, 6);
-            var wheelAxisMat = new THREE.MeshPhongMaterial({ color: Colors.brown, shading: THREE.FlatShading });
-            var wheelAxis = new THREE.Mesh(wheelAxisGeom, wheelAxisMat);
-            wheelTireR.add(wheelAxis);
-            this.mesh.add(wheelTireR);
-
-            var wheelProtecL = wheelProtecR.clone();
-            wheelProtecL.position.z = -wheelProtecR.position.z;
-            this.mesh.add(wheelProtecL);
-
-            var wheelTireL = wheelTireR.clone();
-            wheelTireL.position.z = -wheelTireR.position.z;
-            this.mesh.add(wheelTireL);
-
-            var wheelTireB = wheelTireR.clone();
-            wheelTireB.scale.set(.5, .5, .5);
-            wheelTireB.position.set(-35, -5, 0);
-            this.mesh.add(wheelTireB);
-
-            var suspensionGeom = new THREE.BoxGeometry(4, 20, 4);
-            suspensionGeom.applyMatrix(new THREE.Matrix4().makeTranslation(0, 10, 0))
-            var suspensionMat = new THREE.MeshPhongMaterial({ color: Colors.red, shading: THREE.FlatShading });
-            var suspension = new THREE.Mesh(suspensionGeom, suspensionMat);
-            suspension.position.set(-35, -5, 0);
-            suspension.rotation.z = -.3;
-            this.mesh.add(suspension);
+            var mtlLoader = new THREE.MTLLoader();
+            mtlLoader.setPath('airplane/'); // .mtl 파일 경로 설정
+            mtlLoader.load('11803_Airplane_v1_l1.mtl', function (materials) {
+                materials.preload();
+                var objLoader = new THREE.OBJLoader();
+                objLoader.setMaterials(materials);
+                objLoader.setPath('airplane/'); // .obj 파일 경로 설정
+                objLoader.load('11803_Airplane_v1_l1.obj', function (object) {
+                    object.traverse(function (child) {
+                        if (child instanceof THREE.Mesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    object.rotation.x = Math.PI / 2; // 사용자 지정 피치
+                    object.rotation.y = Math.PI; // 사용자 지정 요
+                    object.rotation.z = Math.PI; // 사용자 지정 롤
+                    self.mesh.add(object);
+                    if (callback) callback();
+                });
+            });
         };
 
-        // Land object definition.
+        // 지면 객체 정의.
         Land = function () {
             var geom = new THREE.PlaneGeometry(20000, 20000, 1, 1);
-            geom.rotateX(-Math.PI / 2); // Rotate the plane to be horizontal.
+            geom.rotateX(-Math.PI / 2); // 평면을 수평으로 회전합니다.
             var mat = new THREE.MeshPhongMaterial({
                 color: Colors.lightgreen,
                 shading: THREE.FlatShading,
             });
             this.mesh = new THREE.Mesh(geom, mat);
-            this.mesh.receiveShadow = true; // The ground should receive shadows.
+            this.mesh.receiveShadow = true; // 지면은 그림자를 받아야 합니다.
         }
 
-        // Tree object definition.
+        // 나무 객체 정의.
         Tree = function () {
             this.mesh = new THREE.Object3D();
 
             var matTreeLeaves = new THREE.MeshPhongMaterial({ color: Colors.green, shading: THREE.FlatShading });
 
-            // Create the trunk.
+            // 몸통을 생성합니다.
             var geonTreeBase = new THREE.BoxGeometry(10, 20, 10);
             var matTreeBase = new THREE.MeshBasicMaterial({ color: Colors.brown });
             var treeBase = new THREE.Mesh(geonTreeBase, matTreeBase);
@@ -302,7 +198,7 @@
             treeBase.receiveShadow = true;
             this.mesh.add(treeBase);
 
-            // Create the leaves using cylinders.
+            // 원통을 사용하여 잎을 생성합니다.
             var geomTreeLeaves1 = new THREE.CylinderGeometry(1, 12 * 3, 12 * 3, 4);
             var treeLeaves1 = new THREE.Mesh(geomTreeLeaves1, matTreeLeaves);
             treeLeaves1.castShadow = true;
@@ -325,11 +221,11 @@
             this.mesh.add(treeLeaves3);
         }
 
-        // Flower object definition.
+        // 꽃 객체 정의.
         Flower = function () {
             this.mesh = new THREE.Object3D();
 
-            // Create the stem.
+            // 줄기를 생성합니다.
             var geomStem = new THREE.BoxGeometry(5, 50, 5, 1, 1, 1);
             var matStem = new THREE.MeshPhongMaterial({ color: Colors.green, shading: THREE.FlatShading });
             var stem = new THREE.Mesh(geomStem, matStem);
@@ -337,17 +233,17 @@
             stem.receiveShadow = true;
             this.mesh.add(stem);
 
-            // Create the center of the flower.
+            // 꽃의 중심을 생성합니다.
             var geomPetalCore = new THREE.BoxGeometry(10, 10, 10, 1, 1, 1);
             var matPetalCore = new THREE.MeshPhongMaterial({ color: Colors.yellow, shading: THREE.FlatShading });
             petalCore = new THREE.Mesh(geomPetalCore, matPetalCore);
             petalCore.castShadow = false;
             petalCore.receiveShadow = true;
 
-            // Choose a random color for the petals.
+            // 꽃잎의 무작위 색상을 선택합니다.
             var petalColor = petalColors[Math.floor(Math.random() * 3)];
 
-            // Create the petals.
+            // 꽃잎을 생성합니다.
             var geomPetal = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
             var matPetal = new THREE.MeshBasicMaterial({ color: petalColor });
             geomPetal.vertices[5].y -= 4;
@@ -370,9 +266,10 @@
             this.mesh.add(petalCore);
         }
 
-        // Array of petal colors to be chosen from.
+        // 선택할 꽃잎 색상 배열.
         var petalColors = [Colors.red, Colors.yellow, Colors.blue];
 
+        // 건물 객체 정의.
         Building = function() {
             this.mesh = new THREE.Object3D();
             var geom = new THREE.BoxGeometry(1, 1, 1);
@@ -386,16 +283,16 @@
             this.mesh.add(building);
         }
 
-        // World object definition (previously Forest).
+        // 월드 객체 정의 (이전에는 숲).
         World = function () {
             this.mesh = new THREE.Object3D();
 
-            // Set the number of trees, flowers, and buildings.
+            // 나무, 꽃, 건물의 개수를 설정합니다.
             this.nTrees = 300;
             this.nFlowers = 200;
             this.nBuildings = 100;
 
-            // Create and position the trees randomly.
+            // 나무를 무작위로 생성하고 배치합니다.
             for (var i = 0; i < this.nTrees; i++) {
                 var t = new Tree();
                 t.mesh.position.x = (Math.random() - 0.5) * 4000;
@@ -406,7 +303,7 @@
                 this.mesh.add(t.mesh);
             }
 
-            // Create and position the flowers randomly.
+            // 꽃을 무작위로 생성하고 배치합니다.
             for (var i = 0; i < this.nFlowers; i++) {
                 var f = new Flower();
                 f.mesh.position.x = (Math.random() - 0.5) * 4000;
@@ -417,7 +314,7 @@
                 this.mesh.add(f.mesh);
             }
 
-            // Create and position the buildings randomly.
+            // 건물을 무작위로 생성하고 배치합니다.
             for (var i = 0; i < this.nBuildings; i++) {
                 var b = new Building();
                 var sx = 20 + Math.random() * 30;
@@ -425,139 +322,137 @@
                 var sz = 20 + Math.random() * 30;
                 b.mesh.scale.set(sx, sy, sz);
                 b.mesh.position.x = (Math.random() - 0.5) * 4000;
-                b.mesh.position.y = sy/2; // Position the base of the building on the ground.
+                b.mesh.position.y = sy/2; // 건물의 바닥을 지면에 배치합니다.
                 b.mesh.position.z = (Math.random() - 0.5) * 4000;
                 this.mesh.add(b.mesh);
             }
         }
 
-        // Global variables for game objects and controls.
+        // 게임 객체 및 컨트롤을 위한 전역 변수.
         var airplane;
-        var keys = {}; // Object to store the state of keyboard keys.
-        var airplaneSpeed = 3; // Base speed is now 3x faster.
+        var keys = {}; // 키보드 키 상태를 저장하는 객체.
+        var airplaneSpeed = 3; // 기본 속도는 이제 3배 빠릅니다.
         var land;
-        var world; // Changed from forest to world
-        var yawAngle = 0; // Left-right rotation angle.
-        var pitchAngle = 0; // Up-down rotation angle.
+        var world; // forest에서 world로 변경됨
+        var yawAngle = 0; // 좌우 회전 각도.
+        var pitchAngle = 0; // 상하 회전 각도.
 
-        // Event listeners for keyboard input.
+        // 키보드 입력에 대한 이벤트 리스너.
         document.addEventListener('keydown', handleKeyDown, false);
         document.addEventListener('keyup', handleKeyUp, false);
 
-        // Sets the key state to true when a key is pressed.
+        // 키가 눌렸을 때 키 상태를 true로 설정합니다.
         function handleKeyDown(event) {
             keys[event.key] = true;
         }
 
-        // Sets the key state to false when a key is released.
+        // 키가 놓였을 때 키 상태를 false로 설정합니다.
         function handleKeyUp(event) {
             keys[event.key] = false;
         }
 
-        // Creates the airplane and adds it to the scene.
-        function createPlane() {
-            airplane = new AirPlane();
-            airplane.mesh.scale.set(.25, .25, .25);
-            airplane.mesh.position.y = 100;
-            scene.add(airplane.mesh);
+        // 비행기를 생성하고 씬에 추가합니다.
+        function createPlane(callback) {
+            airplane = new AirPlane(function() {
+                airplane.mesh.scale.set(0.0125, 0.0125, 0.0125); // 필요에 따라 스케일 조정 (원래의 1/20)
+                airplane.mesh.position.y = 100;
+                scene.add(airplane.mesh);
+                if (callback) callback();
+            });
         }
 
-        // Creates the land and adds it to the scene.
+        // 지면을 생성하고 씬에 추가합니다.
         function createLand() {
             land = new Land();
             land.mesh.position.y = 0;
             scene.add(land.mesh);
         }
 
-        // Creates the world and adds it to the scene.
+        // 월드를 생성하고 씬에 추가합니다.
         function createWorld() {
             world = new World();
             world.mesh.position.y = 0;
             scene.add(world.mesh);
         }
 
-        // Updates the airplane's position and rotation based on user input.
+        // 사용자 입력에 따라 비행기의 위치와 회전을 업데이트합니다.
         function updatePlane() {
-            var pitchSpeed = 0.025; // Slower pitch speed for less sensitivity.
-            var turnSpeed = 0.025; // Slower turn speed for less sensitivity.
-            var maxPitch = 80 * Math.PI / 180; // 80 degrees in radians.
+            var pitchSpeed = 0.025; // 민감도를 낮추기 위해 피치 속도를 느리게 합니다.
+            var turnSpeed = 0.025; // 민감도를 낮추기 위해 회전 속도를 느리게 합니다.
+            var maxPitch = 80 * Math.PI / 180; // 80도 (라디안).
 
-            // Update pitch and yaw angles based on keyboard input.
-            if (keys["ArrowDown"]) { // Down arrow for nose up.
+            // 키보드 입력에 따라 피치 및 요 각도를 업데이트합니다.
+            if (keys["ArrowDown"]) { // 아래쪽 화살표는 기수를 올립니다.
                 pitchAngle = Math.min(maxPitch, pitchAngle + pitchSpeed);
             }
-            if (keys["ArrowUp"]) { // Up arrow for nose down.
+            if (keys["ArrowUp"]) { // 위쪽 화살표는 기수를 내립니다.
                 pitchAngle = Math.max(-maxPitch, pitchAngle - pitchSpeed);
             }
-            if (keys["ArrowLeft"]) { // Left arrow for yaw left.
+            if (keys["ArrowLeft"]) { // 왼쪽 화살표는 왼쪽으로 요합니다.
                 yawAngle += turnSpeed;
             }
-            if (keys["ArrowRight"]) { // Right arrow for yaw right.
+            if (keys["ArrowRight"]) { // 오른쪽 화살표는 오른쪽으로 요합니다.
                 yawAngle -= turnSpeed;
             }
 
-            // Create quaternions for yaw and pitch rotations.
+            // 요 및 피치 회전을 위한 쿼터니언을 생성합니다.
             var yawQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
             var pitchQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), pitchAngle);
 
-            // Combine the rotations: first apply yaw, then pitch.
-            // This ensures that pitching up/down is relative to the plane's current yaw direction.
+            // 회전을 결합합니다: 먼저 요를 적용한 다음 피치를 적용합니다.
+            // 이렇게 하면 위/아래 피칭이 비행기의 현재 요 방향에 상대적으로 이루어집니다.
             airplane.mesh.quaternion.copy(yawQ).multiply(pitchQ);
 
-            // Determine the current speed and propeller rotation based on whether the spacebar is pressed.
+            // 스페이스바가 눌렸는지 여부에 따라 현재 속도와 프로펠러 회전을 결정합니다.
             var currentSpeed = airplaneSpeed;
-            var propellerRotationSpeed = 0.3;
-            if (keys[" "]) { // Spacebar is key code 32, but " " is more readable.
+            if (keys[" "]) { // 스페이스바는 키 코드 32이지만, " "가 더 읽기 쉽습니다.
                 currentSpeed *= 2;
-                propellerRotationSpeed *= 4; // Propeller speed is now 4x faster during boost.
             }
 
-            // Move the plane forward along its current direction.
-            var forwardVector = new THREE.Vector3(1, 0, 0); // Local forward direction is +X.
-            forwardVector.applyQuaternion(airplane.mesh.quaternion); // Transform to world space.
+            // 현재 방향을 따라 비행기를 앞으로 이동시킵니다.
+            var forwardVector = new THREE.Vector3(1, 0, 0); // 로컬 전방 방향은 +X.
+            forwardVector.applyQuaternion(airplane.mesh.quaternion); // 월드 공간으로 변환.
             airplane.mesh.position.add(forwardVector.multiplyScalar(currentSpeed));
-
-            // Animate the propeller.
-            airplane.propeller.rotation.x += propellerRotationSpeed;
         }
 
-        // The main animation loop.
+        // 메인 애니메이션 루프.
         function loop() {
-            // Update the plane's state.
+            // 비행기 상태를 업데이트합니다.
             updatePlane();
 
-            // Set the camera to follow the airplane from behind and slightly above.
-            var relativeCameraOffset = new THREE.Vector3(-250, 155, 0); // Adjusted Y for a 10-degree downward view
+            // 카메라가 비행기를 뒤에서 약간 위에서 따라가도록 설정합니다.
+            var relativeCameraOffset = new THREE.Vector3(-800, 800, 0); // 더 먼 거리를 위해 X 조정
             var cameraOffset = relativeCameraOffset.applyMatrix4(airplane.mesh.matrixWorld);
 
-            // Smoothly move the camera to the new offset position.
+            // 카메라를 새 오프셋 위치로 부드럽게 이동시킵니다.
             camera.position.lerp(cameraOffset, 0.1);
-            camera.up.set(0, 1, 0); // Keep the camera's up direction aligned with the world's up.
+            camera.up.set(0, 1, 0); // 카메라의 위쪽 방향을 월드의 위쪽과 정렬합니다.
             
-            // Make the camera look at a point in front of the airplane.
+            // 카메라가 비행기 앞의 지점을 바라보도록 합니다.
             var lookAtTarget = new THREE.Vector3(1, 0, 0);
             lookAtTarget.applyQuaternion(airplane.mesh.quaternion);
             lookAtTarget.multiplyScalar(500);
             lookAtTarget.add(airplane.mesh.position);
             camera.lookAt(lookAtTarget);
 
-            // Render the scene from the camera's perspective.
+            // 카메라 시점에서 씬을 렌더링합니다.
             renderer.render(scene, camera);
-            // Request the next frame of the animation.
+            // 다음 애니메이션 프레임을 요청합니다.
             requestAnimationFrame(loop);
         }
 
-        // Initialization function.
+        // 초기화 함수.
         function init(event) {
             createScene();
             createLights();
-            createPlane();
-            createLand();
-            createWorld();
-            loop(); // Start the animation loop.
+            createPlane(function() {
+                createLand();
+                createWorld();
+                loop(); // 비행기가 로드된 후 애니메이션 루프를 시작합니다.
+            });
         }
 
-        // Start the application once the page has fully loaded.
+        // 페이지가 완전히 로드되면 애플리케이션을 시작합니다.
         window.addEventListener('load', init, false);
     </script>
 </body>
