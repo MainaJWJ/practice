@@ -197,6 +197,12 @@ var land;
 var world; // forest에서 world로 변경됨
 var yawAngle = 0; // 좌우 회전 각도.
 var pitchAngle = 0; // 상하 회전 각도.
+var kills = 0; // 격추 횟수
+var hits = 0; // 맞힌 횟수
+
+// AI 관련 전역 변수
+var aiAircrafts = [];
+var worldBoundary = 2000;
 
 // 키보드 입력에 대한 이벤트 리스너.
 document.addEventListener('keydown', handleKeyDown, false);
@@ -212,11 +218,210 @@ function handleKeyDown(event) {
     if (event.key === '2') {
         changeAirplane('b-757');
     }
+
+    if (event.key === 'Control' && !isFiring) {
+        startFiring();
+    }
 }
 
 // 키가 놓였을 때 키 상태를 false로 설정합니다.
 function handleKeyUp(event) {
     keys[event.key] = false;
+
+    if (event.key === 'Control') {
+        stopFiring();
+    }
+}
+
+var bullets = [];
+var fireInterval;
+var isFiring = false;
+
+function startFiring() {
+    if (!airplane || !airplane.config || !airplane.config.machineGun) return;
+    isFiring = true;
+    fireInterval = setInterval(createBullet, airplane.config.machineGun.fireRate);
+}
+
+function stopFiring() {
+    isFiring = false;
+    clearInterval(fireInterval);
+}
+
+function createBullet() {
+    if (!airplane || !airplane.config || !airplane.config.machineGun) return;
+
+    var machineGunConfig = airplane.config.machineGun;
+    var bulletGeometry = new THREE.ConeGeometry(machineGunConfig.bulletSize, machineGunConfig.bulletLength, 4); // 4 for sharper cone
+    var bulletMaterial = new THREE.MeshBasicMaterial({ color: parseInt(machineGunConfig.bulletColor, 16) });
+    var bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+
+    var forwardVector = new THREE.Vector3(1, 0, 0);
+    forwardVector.applyQuaternion(airplane.mesh.quaternion);
+
+    bullet.position.copy(airplane.mesh.position);
+    bullet.quaternion.copy(airplane.mesh.quaternion);
+    bullet.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2));
+
+    bullet.previousPosition = bullet.position.clone(); // 이전 위치 저장
+
+    var bulletSpeed = airplane.config.performance.speed * machineGunConfig.bulletSpeedMultiplier;
+    bullet.velocity = forwardVector.multiplyScalar(bulletSpeed);
+
+    scene.add(bullet);
+    bullets.push(bullet);
+}
+
+function updateBullets() {
+    for (var i = bullets.length - 1; i >= 0; i--) {
+        var bullet = bullets[i];
+        bullet.previousPosition.copy(bullet.position); // 현재 위치를 이전 위치로 업데이트
+        bullet.position.add(bullet.velocity);
+
+        // 총알과 AI 항공기 충돌 감지 (Raycasting)
+        var hitObjects = aiAircrafts.map(a => a.hitBoxMesh).filter(m => m !== undefined);
+        
+        var direction = bullet.velocity.clone();
+        if (direction.lengthSq() === 0) { // Check for zero vector
+            // console.warn("Bullet velocity is zero, skipping raycast.");
+            continue; // Skip this bullet if velocity is zero
+        }
+        direction.normalize(); // Normalize only if not zero
+
+        var raycaster = new THREE.Raycaster(bullet.previousPosition, direction);
+        var intersects = raycaster.intersectObjects(hitObjects);
+
+        if (intersects.length > 0) { // 충돌 발생
+            // 충돌한 객체가 어떤 AI 항공기의 것인지 찾습니다.
+            var hitAiPlane = null;
+            for (var k = 0; k < aiAircrafts.length; k++) {
+                if (aiAircrafts[k].hitBoxMesh === intersects[0].object) {
+                    hitAiPlane = aiAircrafts[k];
+                    break;
+                }
+            }
+
+            if (hitAiPlane) {
+                scene.remove(bullet);
+                bullets.splice(i, 1);
+
+                hitAiPlane.health -= 10;
+                hits++;
+                document.getElementById('hit-counter').innerText = 'Hits: ' + hits;
+
+                if (hitAiPlane.health <= 0) {
+                    scene.remove(hitAiPlane.mesh);
+                    scene.remove(hitAiPlane.healthBar); // 체력바 제거
+                    scene.remove(hitAiPlane.hitBoxMesh); // 피격 판정 영역 메시 제거
+                    // aiAircrafts 배열에서 제거
+                    for (var k = 0; k < aiAircrafts.length; k++) {
+                        if (aiAircrafts[k] === hitAiPlane) {
+                            aiAircrafts.splice(k, 1);
+                            break;
+                        }
+                    }
+                    createAiAircraft(); // 새 AI 항공기 생성
+                    kills++;
+                    document.getElementById('kill-counter').innerText = 'Kills: ' + kills;
+                }
+            }
+            // 총알 하나는 하나의 비행기만 맞출 수 있습니다.
+            continue; // 다음 총알로 넘어감
+        }
+
+        // 화면 밖으로 나가면 총알 제거
+        if (bullet.position.x > 10000 || bullet.position.x < -10000 ||
+            bullet.position.y > 10000 || bullet.position.y < -10000 ||
+            bullet.position.z > 10000 || bullet.position.z < -10000) {
+            scene.remove(bullet);
+            bullets.splice(i, 1);
+        }
+    }
+}
+
+function updateAiAircrafts() {
+    var radar = document.getElementById('radar');
+    // 기존 블립만 제거 (동심원과 지시선은 유지)
+    var blips = radar.querySelectorAll('.blip');
+    blips.forEach(function(blip) {
+        blip.remove();
+    });
+
+    aiAircrafts.forEach(function(aiPlane) {
+        if (!aiPlane.mesh) return;
+
+        // AI 로직 (이전과 동일)
+        if (Math.random() > 0.99) {
+            aiPlane.mesh.rotation.y += (Math.random() - 0.5) * 0.5;
+        }
+        if (aiPlane.mesh.position.x > worldBoundary || aiPlane.mesh.position.x < -worldBoundary ||
+            aiPlane.mesh.position.z > worldBoundary || aiPlane.mesh.position.z < -worldBoundary) {
+            var direction = new THREE.Vector3(0, aiPlane.mesh.position.y, 0).sub(aiPlane.mesh.position).normalize();
+            aiPlane.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction);
+        }
+        var forwardVector = new THREE.Vector3(1, 0, 0);
+        forwardVector.applyQuaternion(aiPlane.mesh.quaternion);
+        aiPlane.mesh.position.add(forwardVector.multiplyScalar(aiPlane.config.performance.speed));
+
+        // 피격 판정 영역 메시 위치 업데이트
+        if (aiPlane.hitBoxMesh) {
+            aiPlane.hitBoxMesh.position.copy(aiPlane.mesh.position);
+        }
+
+        // 체력바 업데이트 (이전과 동일)
+        if (aiPlane.healthBar) {
+            aiPlane.healthBar.position.copy(aiPlane.mesh.position).add(new THREE.Vector3(0, -20, 0)); // 항공기 아래에 위치
+            const distance = camera.position.distanceTo(aiPlane.mesh.position);
+            const healthBarWidth = 0.5; // px, 1에서 0.5로 줄여 길이를 절반으로 조정
+            const scale = (healthBarWidth / window.innerWidth) * distance * Math.tan(camera.fov * Math.PI / 360) * 2;
+            aiPlane.healthBar.scale.x = (aiPlane.health / 100) * scale;
+            aiPlane.healthBar.scale.y = scale / 10;
+            aiPlane.healthBar.scale.z = 1;
+            aiPlane.healthBar.lookAt(camera.position);
+        }
+
+        // 레이더에 적기 위치 표시
+        var relativePos = aiPlane.mesh.position.clone().sub(airplane.mesh.position);
+
+        // 내 기체의 회전(quaternion)을 사용하여 적기의 상대 위치를 변환합니다.
+        // 레이더는 수평적인 관계만 표시해야 하므로, yawAngle만 사용합니다.
+        var playerYawQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
+        var inversePlayerYawQuaternion = playerYawQuaternion.inverse();
+        var localPos = relativePos.clone().applyQuaternion(inversePlayerYawQuaternion);
+
+        // 레이더 좌표로 변환 (12시 방향이 정면, X는 오른쪽, Z는 앞)
+        // 레이더 크기 200px, 중앙 100px
+        // 비행기 로컬 좌표계: +X 전방, +Y 상방, +Z 우측
+        var radarX = 100 + (localPos.z / worldBoundary) * 100; // localPos.z는 우측/좌측 (레이더 X축)
+        var radarY = 100 - (localPos.x / worldBoundary) * 100; // localPos.x는 전방/후방 (레이더 Y축, 화면 Y축은 반전)
+
+        // 레이더 범위 내에 있을 때만 표시
+        if (Math.abs(localPos.x) < worldBoundary && Math.abs(localPos.z) < worldBoundary) {
+            var blip = document.createElement('div');
+            blip.className = 'blip';
+            blip.style.left = radarX + 'px';
+            blip.style.top = radarY + 'px';
+            blip.style.backgroundColor = aiPlane.config.future_expansion.radarColor; // config에서 색상 로드
+            radar.appendChild(blip);
+        } else { // 레이더 범위 밖에 있을 때
+            // 적기의 방향을 레이더 외곽에 표시
+            var angle = Math.atan2(localPos.z, localPos.x); // localPos.z는 X축, localPos.x는 Y축
+            var radius = 95; // 레이더 원의 반지름 (100px - blip 크기)
+
+            var blip = document.createElement('div');
+            blip.className = 'blip';
+            blip.style.width = '2px';
+            blip.style.height = '2px';
+            blip.style.backgroundColor = aiPlane.config.future_expansion.radarColor; // config에서 색상 로드
+            blip.style.borderRadius = '50%';
+            blip.style.position = 'absolute';
+
+            // 각도를 화면 좌표에 매핑: 12시 (위)는 -Y, 3시 (오른쪽)는 +X
+            blip.style.left = (100 + radius * Math.sin(angle)) + 'px';
+            blip.style.top = (100 - radius * Math.cos(angle)) + 'px'; // 화면 Y축은 아래로 갈수록 증가하므로 반전
+            radar.appendChild(blip);
+        }
+    });
 }
 
 // 비행기를 생성하고 씬에 추가합니다.
@@ -242,6 +447,46 @@ function createWorld(worldName, config) {
     world = new World(worldName, config);
     world.mesh.position.y = 0;
     scene.add(world.mesh);
+}
+
+function createAiAircraft() {
+    var modelNames = Object.keys(airplaneConfigs);
+    var randomModelName = modelNames[Math.floor(Math.random() * modelNames.length)];
+
+    var aiPlane = new AirPlane(randomModelName, function() {
+        var scale = aiPlane.config.model.scale || 0.0125;
+        aiPlane.mesh.scale.set(scale, scale, scale);
+        aiPlane.mesh.position.x = (Math.random() - 0.5) * worldBoundary;
+        aiPlane.mesh.position.y = 100 + Math.random() * 200;
+        aiPlane.mesh.position.z = (Math.random() - 0.5) * worldBoundary;
+
+        // 체력바 추가
+        var healthBarGeometry = new THREE.BoxGeometry(100, 10, 10);
+        var healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        var healthBar = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
+        aiPlane.healthBar = healthBar;
+        aiPlane.health = aiPlane.config.combat.health; // config에서 체력 로드
+
+        // AI 속도 관리: AI 속도를 플레이어 기본 속도보다 낮게 설정
+        if (airplane && airplane.config) {
+            aiPlane.config.performance.speed = 1 + Math.random() * (airplane.config.performance.speed - 1);
+        } else {
+            // 플레이어 항공기 설정이 아직 로드되지 않은 경우 (createPlane 호출 후에는 발생하지 않아야 함)
+            aiPlane.config.performance.speed = 1 + Math.random() * 2; // 기본 랜덤 속도
+        }
+
+        // 피격 판정 영역 시각화 (THREE.Mesh)
+        var hitBoxSize = aiPlane.config.combat.hitboxSize * 2; // config에서 피격 크기 로드
+        var hitBoxGeometry = new THREE.BoxGeometry(hitBoxSize, hitBoxSize, hitBoxSize);
+        var hitBoxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.2, wireframe: true }); // 녹색, 투명, 와이어프레임
+        var hitBoxMesh = new THREE.Mesh(hitBoxGeometry, hitBoxMaterial);
+        aiPlane.hitBoxMesh = hitBoxMesh;
+        scene.add(hitBoxMesh);
+
+        scene.add(aiPlane.mesh);
+        scene.add(healthBar); // 씬에 직접 추가
+        aiAircrafts.push(aiPlane);
+    });
 }
 
 function changeWorld(worldName) {
@@ -316,6 +561,8 @@ function updatePlane() {
 function loop() {
     // 비행기 상태를 업데이트합니다.
     updatePlane();
+    updateBullets();
+    updateAiAircrafts();
 
     // 카메라가 비행기를 뒤에서 약간 위에서 따라가도록 설정합니다.
     var relativeCameraOffset = new THREE.Vector3(-800, 800, 0); // 더 먼 거리를 위해 X 조정
@@ -353,11 +600,25 @@ function changeAirplane(modelName) {
 function init(event) {
     createScene();
     createLights();
+    createRadar(); // 레이더 생성 함수 호출
     createPlane('b-747', function() {
         changeWorld('default');
+        for (var i = 0; i < 10; i++) {
+            createAiAircraft();
+        }
         loop(); // 비행기가 로드된 후 애니메이션 루프를 시작합니다.
     });
 }
 
 // 페이지가 완전히 로드되면 애플리케이션을 시작합니다.
 window.addEventListener('load', init, false);
+
+function createRadar() {
+    var radar = document.getElementById('radar');
+    // 동심원 생성
+    for (var i = 0; i < 5; i++) {
+        var circle = document.createElement('div');
+        circle.className = 'concentric-circle';
+        radar.appendChild(circle);
+    }
+}

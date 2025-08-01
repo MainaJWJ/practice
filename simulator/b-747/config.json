@@ -18,11 +18,21 @@
     "attack": 10,
     "defense": 10,
     "health": 100,
+    "hitboxSize": 100,
     "ammo": {
       "weapon1": 100,
       "weapon2": 50,
       "weapon3": 10
     }
   },
-  "future_expansion": {}
+  "future_expansion": {
+    "radarColor": "blue"
+  },
+  "machineGun": {
+    "bulletSpeedMultiplier": 56,
+    "bulletSize": 2,
+    "bulletLength": 160,
+    "bulletColor": "0xffffff",
+    "fireRate": 100
+  }
 }

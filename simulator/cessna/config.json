@@ -18,11 +18,14 @@
     "attack": 10,
     "defense": 10,
     "health": 100,
+    "hitboxSize": 50,
     "ammo": {
       "weapon1": 100,
       "weapon2": 50,
       "weapon3": 10
     }
   },
-  "future_expansion": {}
+  "future_expansion": {
+    "radarColor": "yellow"
+  }
 }

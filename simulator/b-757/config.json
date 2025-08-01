@@ -17,12 +17,15 @@
   "combat": {
     "attack": 10,
     "defense": 10,
-    "health": 100,
+    "health": 120,
+    "hitboxSize": 120,
     "ammo": {
       "weapon1": 100,
       "weapon2": 50,
       "weapon3": 10
     }
   },
-  "future_expansion": {}
+  "future_expansion": {
+    "radarColor": "green"
+  }
 }
